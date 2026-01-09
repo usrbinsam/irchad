@@ -126,7 +126,6 @@ export const useIRCStore = defineStore("irc", () => {
   client.on("join", (ev) => {
     const nick = ev.nick;
     const channel = ev.channel;
-    console.log(ev);
     if (isMe(nick)) {
       addBuffer(channel);
       if (!activeBufferName.value) {
@@ -145,13 +144,21 @@ export const useIRCStore = defineStore("irc", () => {
     });
   });
 
+  client.on("quit", function ({ nick }) {
+    for (let buff of Object.values(buffers.value)) {
+      const idx = buff.users.findIndex((u) => u.nick === nick);
+      if (idx === -1) continue;
+      buff.users.splice(idx, 1);
+    }
+  });
+
   client.on("part", ({ nick, channel }) => {
     if (isMe(nick)) {
       delBuffer(channel);
     }
     const buffer = getBuffer(channel);
     if (!buffer) return;
-    const idx = buffer.users.find((u) => u.nick === nick);
+    const idx = buffer.users.findIndex((u) => u.nick === nick);
     if (idx === -1) return;
 
     buffer.users.splice(idx, 1);
