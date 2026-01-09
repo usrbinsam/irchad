@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  ergo:
+    init: true
+    image: ghcr.io/ergochat/ergo:master
+    ports:
+      - "6667:6667/tcp"
+      - "8097:8097"
+    volumes:
+      - data:/ircd
+      - ./ircd.yaml:/ircd/ircd.yaml
+    deploy:
+      placement:
+        constraints:
+          - "node.role == manager"
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+
+volumes:
+  data:
