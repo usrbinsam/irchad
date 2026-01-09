@@ -6,15 +6,11 @@ const store = useIRCStore();
 const bufferList = computed(() => {
   return Object.keys(buffers);
 });
-
-function click(bufferName) {
-  store.setActiveBuffer(bufferName);
-}
 </script>
 
 <template>
   <v-list>
-    <v-list-item v-for="buf in bufferList" @click="click(buf)">
+    <v-list-item v-for="buf in bufferList" @click="store.setActiveBuffer(buf)">
       {{ buf }}
     </v-list-item>
   </v-list>
