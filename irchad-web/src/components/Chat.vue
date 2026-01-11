@@ -5,21 +5,26 @@ import { useIRCStore } from "@/stores/irc";
 const store = useIRCStore();
 const inputBuffer = ref();
 
-onMounted(() => {
-  store.connect();
-});
+onMounted(store.connect);
 
 function send() {
   store.sendActiveBuffer(inputBuffer.value);
   inputBuffer.value = "";
 }
 </script>
+
 <template>
   <div class="d-flex flex-row" style="height: 100vh">
     <v-sheet border class="buffers">
       <BufferList />
     </v-sheet>
     <div class="messages d-flex flex-column">
+      <v-toolbar density="compact">
+        <v-toolbar-title>
+          <p>{{ store.activeBufferName }}</p>
+          {{ store.activeBuffer?.topic }}
+        </v-toolbar-title>
+      </v-toolbar>
       <MessageList
         :messages="store.activeBuffer?.messages"
         :me="store.clientInfo.nick"
@@ -49,7 +54,7 @@ function send() {
 
 .messages {
   height: 100%;
-  flex: 2;
+  flex: 3;
   justify-content: space-between;
 }
 

@@ -1,17 +1,23 @@
 <script setup>
-import { computed } from "vue";
 import { useIRCStore } from "@/stores/irc";
-const { buffers } = useIRCStore();
-const store = useIRCStore();
-const bufferList = computed(() => {
-  return Object.keys(buffers);
-});
+
+const { setActiveBuffer, buffers, activeBufferName } = useIRCStore();
 </script>
 
 <template>
-  <v-list>
-    <v-list-item v-for="buf in bufferList" @click="store.setActiveBuffer(buf)">
-      {{ buf }}
+  <v-list
+    selectable
+    :selected="[activeBufferName]"
+    @click:select="(item) => setActiveBuffer(item.id)"
+  >
+    <v-list-item :value="bufName" v-for="(bufValue, bufName) in buffers">
+      {{ bufName }}
+      <template v-slot:append>
+        <v-badge
+          :content="bufValue.messages.length - bufValue.lastSeenIdx"
+          inline
+        />
+      </template>
     </v-list-item>
   </v-list>
 </template>

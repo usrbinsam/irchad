@@ -29,6 +29,13 @@ export const useIRCStore = defineStore("irc", () => {
 
   function setActiveBuffer(bufferName) {
     activeBufferName.value = bufferName;
+    resetBufferLastSeen(bufferName);
+  }
+
+  function resetBufferLastSeen(bufferName) {
+    const buffer = getBuffer(bufferName);
+    if (!buffer) return;
+    buffer.lastSeenIdx = buffer.messages.length;
   }
 
   const client = new Client({
@@ -51,13 +58,6 @@ export const useIRCStore = defineStore("irc", () => {
 
   function sendActiveBuffer(message) {
     client.say(activeBufferName.value, message);
-    // const buffer = getBuffer(activeBufferName.value);
-    //
-    // buffer.messages.push({
-    //   nick: clientInfo.value.nick,
-    //   message,
-    //   time: Date.now(),
-    // });
   }
 
   function isMe(target) {
@@ -69,6 +69,7 @@ export const useIRCStore = defineStore("irc", () => {
       messages: [],
       topic: "",
       users: [],
+      lastSeenIdx: 0,
     };
     return buffers.value[bufferName];
   }
@@ -121,6 +122,10 @@ export const useIRCStore = defineStore("irc", () => {
       buffer = getBuffer(message.target);
     }
     buffer.messages.push(message);
+
+    if (activeBufferName.value) {
+      resetBufferLastSeen(activeBufferName.value);
+    }
   });
 
   client.on("join", (ev) => {
@@ -150,6 +155,12 @@ export const useIRCStore = defineStore("irc", () => {
       if (idx === -1) continue;
       buff.users.splice(idx, 1);
     }
+  });
+
+  client.on("topic", ({ topic, channel }) => {
+    const buffer = getBuffer(channel);
+    if (!buffer) return;
+    buffer.topic = topic;
   });
 
   client.on("part", ({ nick, channel }) => {
