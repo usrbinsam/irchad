@@ -154,7 +154,7 @@ server:
     max-concurrent-connections: 16
 
     # whether to restrict the rate of new connections per IP/CIDR
-    throttle: true
+    throttle: false
     # how long to keep track of connections for
     window: 10m
     # maximum number of new connections per IP/CIDR within the given duration

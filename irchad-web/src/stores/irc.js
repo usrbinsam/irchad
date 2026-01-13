@@ -13,6 +13,17 @@ export const useIRCStore = defineStore("irc", () => {
     gecos: "IrChad",
   });
 
+  const selfAvatar = ref("https://placekittens.com/128/128");
+
+  function setAvatar(v) {
+    selfAvatar.value = v;
+    client.raw(`METADATA * SET avatar ${selfAvatar.value}`);
+  }
+
+  function setNick(v) {
+    client.changeNick(v);
+  }
+
   const buffers = ref({});
   const activeBufferName = ref();
   const metadata = ref({});
@@ -87,7 +98,18 @@ export const useIRCStore = defineStore("irc", () => {
   client.on("registered", function () {
     client.list();
     client.raw("METADATA * SUB avatar");
-    client.raw("METADATA * SET avatar https://placekittens.com/128/128");
+    client.raw(`METADATA * SET avatar ${selfAvatar.value}`);
+  });
+
+  client.on("nick", function ({ nick, new_nick }) {
+    if (nick === clientInfo.value.nick) {
+      clientInfo.value.nick = new_nick;
+    }
+    for (let buff of Object.values(buffers.value)) {
+      const idx = buff.users.findIndex((u) => u.nick === nick);
+      if (idx === -1) continue;
+      buff.users[idx].nick = new_nick;
+    }
   });
 
   client.on("unknown command", function (ircCommand) {
@@ -192,5 +214,8 @@ export const useIRCStore = defineStore("irc", () => {
     setActiveBuffer,
     getMetadata,
     metadata,
+    selfAvatar,
+    setAvatar,
+    setNick,
   };
 });
