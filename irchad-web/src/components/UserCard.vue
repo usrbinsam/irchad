@@ -4,9 +4,10 @@ import { useIRCStore } from "@/stores/irc";
 import { storeToRefs } from "pinia";
 
 const { selfAvatar } = storeToRefs(useIRCStore());
-const { clientInfo, setAvatar, setNick } = useIRCStore();
+const { clientInfo, setAvatar, setNick, setBio } = useIRCStore();
 const avatarDialog = ref(false);
 const newNick = ref();
+const newBio = ref();
 
 function changeAvatar() {
   newNick.value = clientInfo.nick;
@@ -19,6 +20,9 @@ function submitAvatar() {
   if (newNick.value && clientInfo.nick !== newNick.value) {
     setNick(newNick.value);
   }
+  if (newBio.value) {
+    setBio(newBio.value);
+  }
 }
 </script>
 
@@ -28,6 +32,7 @@ function submitAvatar() {
       <v-card-text>
         <v-text-field v-model="selfAvatar" label="Avatar URL" />
         <v-text-field v-model="newNick" label="Nick" />
+        <v-text-field v-model="newBio" label="Bio" />
       </v-card-text>
       <v-card-actions>
         <v-btn text="OK" @click="submitAvatar" />
