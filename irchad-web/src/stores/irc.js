@@ -15,9 +15,34 @@ export const useIRCStore = defineStore("irc", () => {
 
   const selfAvatar = ref("https://placekittens.com/128/128");
 
+  loadPrefs();
+
   function setAvatar(v) {
     selfAvatar.value = v;
     client.raw(`METADATA * SET avatar ${selfAvatar.value}`);
+    storePrefs();
+  }
+
+  function loadPrefs() {
+    const prefs = JSON.parse(localStorage.getItem("prefs"));
+    if (!prefs) return;
+
+    if (prefs.avatar) {
+      selfAvatar.value = prefs.avatar;
+    }
+    if (prefs.nick) {
+      clientInfo.value.nick = prefs.nick;
+    }
+  }
+
+  function storePrefs() {
+    localStorage.setItem(
+      "prefs",
+      JSON.stringify({
+        nick: clientInfo.value.nick,
+        avatar: selfAvatar.value,
+      }),
+    );
   }
 
   function setNick(v) {
@@ -56,6 +81,7 @@ export const useIRCStore = defineStore("irc", () => {
   function connect() {
     client.requestCap("draft/metadata-2");
     client.requestCap("echo-message");
+    client.requestCap("chathistory");
     const tls = location.protocol === "https:";
     client.connect({
       ...clientInfo.value,
@@ -104,12 +130,15 @@ export const useIRCStore = defineStore("irc", () => {
   client.on("nick", function ({ nick, new_nick }) {
     if (nick === clientInfo.value.nick) {
       clientInfo.value.nick = new_nick;
+      storePrefs();
     }
     for (let buff of Object.values(buffers.value)) {
       const idx = buff.users.findIndex((u) => u.nick === nick);
       if (idx === -1) continue;
       buff.users[idx].nick = new_nick;
     }
+    metadata.value[new_nick] = { ...metadata.value[nick] };
+    delete metadata.value[nick];
   });
 
   client.on("unknown command", function (ircCommand) {
@@ -138,6 +167,7 @@ export const useIRCStore = defineStore("irc", () => {
 
   client.on("message", function (message) {
     let buffer;
+    if (message.nick === "HistServ") return;
     if (isMe(message.target)) {
       buffer = getBuffer(message.nick);
     } else {
@@ -158,6 +188,7 @@ export const useIRCStore = defineStore("irc", () => {
       if (!activeBufferName.value) {
         activeBufferName.value = channel;
       }
+      client.raw("CHATHISTORY LATEST " + channel + " * 200");
       return;
     }
 
