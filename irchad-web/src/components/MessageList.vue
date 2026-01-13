@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, watch, useTemplateRef } from "vue";
 import { useIRCStore } from "@/stores/irc";
 const props = defineProps(["messages", "me"]);
 
@@ -15,36 +15,47 @@ const timeFormatter = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
   hour12: true,
 });
+
 function formatTime(ts) {
   const date = new Date(ts);
   return timeFormatter.format(date);
 }
+
+const chatHistory = useTemplateRef("chat-scrollback");
+watch(
+  () => props.messages,
+  () =>
+    nextTick(() => {
+      chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
+    }),
+  { deep: true },
+);
 </script>
 
 <template>
-  <v-sheet class="message-list d-flex">
-    <v-list>
-      <v-list-item
-        v-for="msg in messagesReverse"
-        density="compact"
-        :prepend-avatar="store.getMetadata(msg.nick, 'avatar')"
-      >
-        <v-list-item-title>
-          <span
-            class="message-nick"
-            :class="{ 'text-primary': me === msg.nick }"
-          >
-            {{ msg.nick }}
-          </span>
-          <span class="message-time" v-if="!!msg.time">{{
-            formatTime(msg.time)
-          }}</span>
-        </v-list-item-title>
-        <v-list-item-subtitle>
+  <v-sheet ref="chat-history" class="message-list d-flex">
+    <div ref="chat-scrollback">
+      <v-list>
+        <v-list-item
+          v-for="msg in messagesReverse"
+          density="compact"
+          :prepend-avatar="store.getMetadata(msg.nick, 'avatar')"
+        >
+          <v-list-item-title>
+            <span
+              class="message-nick font-weight-bold"
+              :class="{ 'text-primary': me === msg.nick }"
+            >
+              {{ msg.nick }}
+            </span>
+            <span class="message-time" v-if="!!msg.time">{{
+              formatTime(msg.time)
+            }}</span>
+          </v-list-item-title>
           {{ msg.message }}
-        </v-list-item-subtitle>
-      </v-list-item>
-    </v-list>
+        </v-list-item>
+      </v-list>
+    </div>
   </v-sheet>
 </template>
 
