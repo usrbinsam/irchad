@@ -51,6 +51,15 @@ watch(
               <span class="message-time" v-if="!!msg.time">{{
                 formatTime(msg.time)
               }}</span>
+              <v-chip
+                class="ml-2"
+                v-bind="props"
+                label
+                color="purple-lighten-2"
+                v-if="msg.kind === 'notice'"
+                size="x-small"
+                ><v-icon class="mr-2">mdi-eye</v-icon>Only visible to you
+              </v-chip>
             </v-list-item-title>
             {{ msg.message }}
           </v-list-item></template

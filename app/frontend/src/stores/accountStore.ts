@@ -3,6 +3,7 @@ import { ref } from "vue";
 
 export const useAccountStore = defineStore("accountStore", () => {
   const authenticated = ref(false);
+  const showRegistration = ref(false);
   const account = ref({
     nick: "",
     account: "",
@@ -21,5 +22,13 @@ export const useAccountStore = defineStore("accountStore", () => {
     account.value.nick = v;
   }
 
-  return { account, authError, authenticated, setAuthenticated, setNick };
+  return {
+    account,
+    authError,
+    authenticated,
+    showRegistration,
+    setAuthenticated,
+    setNick,
+    showRegistration,
+  };
 });

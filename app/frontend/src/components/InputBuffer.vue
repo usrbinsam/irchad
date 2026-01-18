@@ -1,10 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useIRCStore } from "@/stores/irc";
 import { useBufferStore } from "@/stores/bufferStore";
-const emit = defineEmits(["send"]);
+import { useAccountStore } from "@/stores/accountStore";
+import { useRouter } from "vue-router";
+
+const emit = defineEmits(["send", "raw"]);
 
 const store = useIRCStore();
+const accountStore = useAccountStore();
+const { showRegistration } = storeToRefs(accountStore);
+const router = useRouter();
 const bufferStore = useBufferStore();
 const text = ref();
 const menu = ref({
@@ -15,7 +21,7 @@ const menu = ref({
 const menuList = ref({
   density: "compact",
   slim: true,
-  items: [],
+  items: [] as any[],
   itemTitle: "title",
   itemValue: "value",
   selected: [],
@@ -30,18 +36,26 @@ const completionPos = ref(0);
 function clickItem() {}
 function send() {
   if (!text.value) return;
-  emit("send", text.value);
+
+  if (text.value.slice(0, 2) === "//") {
+    emit("raw", text.value.substring(2));
+  } else if (text.value[0] === "/") {
+    router.push({ path: "/register" });
+  } else {
+    emit("send", text.value);
+  }
+
   menu.value.open = false;
   text.value = "";
 }
 
-function filterUsers(s) {
+function filterUsers(s: string) {
   if (store.activeBuffer) {
     return store.activeBuffer.users.filter((u) => u.nick.startsWith(s));
   }
 }
 
-function trigger(ev) {
+function trigger(ev: KeyboardEvent) {
   const input = ev.target;
   const cursor = input.selectionStart;
   cursorPos.value = cursor;
@@ -49,7 +63,18 @@ function trigger(ev) {
 
   const textBefore = text.slice(0, cursor);
   const mentionMatch = textBefore.match(/@(\w*)$/);
-  if (mentionMatch) {
+  if (text[0] === "/") {
+    menu.value.open = true;
+    menuList.value.items = [
+      {
+        title: "register",
+        value: "register",
+        cmd: () => {
+          showRegistration.value = true;
+        },
+      },
+    ];
+  } else if (mentionMatch) {
     menu.value.open = true;
     menuList.value.items = filterUsers(mentionMatch[1]);
     menuList.value.itemTitle = "nick";

@@ -1,14 +1,49 @@
 import { defineStore, storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { Client } from "irc-framework";
 import { useBufferStore } from "./bufferStore";
 import { ref } from "vue";
 import { useAccountStore } from "./accountStore";
+
+export type HookFunction = (event: any) => HookStatus;
+
+export enum HookStatus {
+  HOOK_OK,
+  HOOK_EAT,
+}
 
 export const useIRCStore = defineStore("ircStore", () => {
   const bufferStore = useBufferStore();
   const accountStore = useAccountStore();
   const connected = ref(false);
   const { authError } = storeToRefs(accountStore);
+
+  const hooks = {} as Record<string, HookFunction[]>;
+
+  function registerHook(event: string, f: HookFunction) {
+    if (hooks[event]) hooks[event].push(f);
+    else hooks[event] = [f];
+  }
+
+  function runHook(eventName: string, eventArgs: any): HookStatus {
+    if (!hooks[eventName]) return HookStatus.HOOK_OK;
+    let lastRetVal = HookStatus.HOOK_OK;
+
+    for (const hookFunction of hooks[eventName]) {
+      const retVal = hookFunction(eventArgs);
+      if (retVal === HookStatus.HOOK_EAT) return retVal;
+      lastRetVal = retVal;
+    }
+
+    return lastRetVal;
+  }
+
+  function unregisterHook(eventName: string, f: HookFunction) {
+    if (!hooks[eventName]) return;
+    const idx = hooks[eventName].findIndex((item) => item === f);
+    if (idx === -1) return;
+    hooks[eventName].splice(idx, 1);
+  }
 
   const selfAvatar = ref("https://placekittens.com/128/128");
   const bio = ref();
@@ -85,7 +120,6 @@ export const useIRCStore = defineStore("ircStore", () => {
       nick: accountStore.account.nick,
     };
 
-    console.log(connectParams);
     client.connect(connectParams);
   }
 
@@ -93,11 +127,12 @@ export const useIRCStore = defineStore("ircStore", () => {
     if (!bufferStore.activeBuffer) {
       return;
     }
-    bufferStore.activeBuffer.channel.say(message);
+    if (bufferStore.activeBuffer.channel)
+      bufferStore.activeBuffer.channel.say(message);
+    else client.say(bufferStore.activeBuffer.name, message);
   }
 
   function isMe(target: string) {
-    console.log(client.user.nick);
     return target === client.user.nick;
   }
 
@@ -129,8 +164,10 @@ export const useIRCStore = defineStore("ircStore", () => {
     },
   );
 
+  const router = useRouter();
   client.on("registered", function () {
     connected.value = true;
+    router.push({ name: "Chat" });
     client.list();
     client.raw("METADATA * SUB avatar");
     client.raw("METADATA * SUB bio");
@@ -207,14 +244,22 @@ export const useIRCStore = defineStore("ircStore", () => {
 
   client.on("message", function (message: { nick: string; target: string }) {
     let buffer;
+
+    const retVal = runHook("message", message);
+    if (retVal === HookStatus.HOOK_EAT) return;
+
     if (message.nick === "HistServ") return;
     if (isMe(message.target)) {
       buffer = bufferStore.getBuffer(message.nick);
     } else {
       buffer = bufferStore.getBuffer(message.target);
     }
+
     if (!buffer) {
-      return;
+      buffer = bufferStore.addBuffer(message.nick, {
+        name: message.nick,
+        channel: null,
+      });
     }
 
     buffer.messages.push(message);
@@ -224,6 +269,14 @@ export const useIRCStore = defineStore("ircStore", () => {
       bufferStore.activeBuffer.name === buffer.name
     ) {
       buffer.resetLastSeen();
+    }
+  });
+
+  client.on("notice", function (message) {
+    const retVal = runHook("notice", message);
+    if (retVal === HookStatus.HOOK_EAT) return;
+    if (bufferStore.activeBuffer) {
+      bufferStore.activeBuffer.messages.push({ ...message, kind: "notice" });
     }
   });
 
@@ -294,5 +347,7 @@ export const useIRCStore = defineStore("ircStore", () => {
     setBio,
     bio,
     connected,
+    registerHook,
+    unregisterHook,
   };
 });

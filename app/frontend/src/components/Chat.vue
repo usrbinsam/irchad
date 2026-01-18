@@ -10,6 +10,7 @@ const accountStore = useAccountStore();
 
 <template>
   <div class="d-flex flex-row" style="height: 100vh">
+    <router-view />
     <v-sheet border class="buffers">
       <UserCard />
       <v-divider />
@@ -27,16 +28,10 @@ const accountStore = useAccountStore();
         :me="accountStore.account.nick"
       />
       <v-sheet>
-        <!-- <v-text-field -->
-        <!--   variant="outlined" -->
-        <!--   :placeholder="`Message ${store.activeBufferName}`" -->
-        <!--   v-model="inputBuffer" -->
-        <!--   hide-details -->
-        <!--   class="ma-2" -->
-        <!--   @keydown.enter.exact.prevent="send" -->
-        <!-- /> -->
-
-        <InputBuffer @send="ircStore.sendActiveBuffer" />
+        <InputBuffer
+          @raw="(txt: string) => ircStore.client.raw(txt)"
+          @send="ircStore.sendActiveBuffer"
+        />
       </v-sheet>
     </div>
     <v-sheet class="user-list h-100" border>
