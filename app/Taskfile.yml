@@ -1,0 +1,7 @@
+version: "3"
+
+tasks:
+  dev:
+    cmd: wails dev -tags webkit2_41
+    # env:
+    #   WEBKIT_DISABLE_DMABUF_RENDERER: "1"

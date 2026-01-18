@@ -27,7 +27,7 @@ server:
   # 'rfc1459-strict'. we recommend leaving this value at its default;
   # however, note that changing it once the network is already up and running is
   # problematic.
-  casemapping: "precis"
+  casemapping: "permissive"
 
   # enforce-utf8 controls whether the server will preemptively discard non-UTF8
   # messages (since they cannot be relayed to websocket clients), or will allow
@@ -810,17 +810,17 @@ limits:
 # fakelag: prevents clients from spamming commands too rapidly
 fakelag:
   # whether to enforce fakelag
-  enabled: true
+  enabled: false
 
   # time unit for counting command rates
   window: 1s
 
   # clients can send this many commands without fakelag being imposed
-  burst-limit: 5
+  burst-limit: 1000
 
   # once clients have exceeded their burst allowance, they can send only
   # this many commands per `window`:
-  messages-per-window: 2
+  messages-per-window: 10000
 
   # client status resets to the default state if they go this long without
   # sending any commands:
