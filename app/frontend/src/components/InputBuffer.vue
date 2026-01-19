@@ -103,6 +103,7 @@ function tabComplete() {
   const beforeCursor = text.value.splice(0, cursor);
   const afterCursor = text.value.slice(cursor);
 }
+const rows = ref(1);
 </script>
 <template>
   <v-menu
@@ -114,16 +115,18 @@ function tabComplete() {
   >
     <v-list v-bind="menuList" @click:select="clickItem" />
   </v-menu>
-  <v-text-field
+  <v-textarea
+    :rows="rows"
+    auto-grow
     v-model="text"
     autofocus
     hide-details
     :placeholder="`Message ${bufferStore.activeBufferName}`"
     @input="trigger"
-    @keydown.enter.prevent="send"
+    @keydown.enter.exact.prevent="send"
     @keydown.tab.prevent="tabComplete"
     variant="outlined"
     class="ma-1"
     role="irchad"
-  ></v-text-field>
+  />
 </template>

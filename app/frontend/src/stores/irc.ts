@@ -12,12 +12,19 @@ export enum HookStatus {
   HOOK_EAT,
 }
 
+interface Batch {
+  type: string;
+  target: string;
+  messages: any[];
+  params: string[];
+}
+
 export const useIRCStore = defineStore("ircStore", () => {
   const bufferStore = useBufferStore();
   const accountStore = useAccountStore();
   const connected = ref(false);
   const { authError } = storeToRefs(accountStore);
-
+  const batches = new Map<string, Batch>();
   const hooks = {} as Record<string, HookFunction[]>;
 
   function registerHook(event: string, f: HookFunction) {
@@ -103,6 +110,7 @@ export const useIRCStore = defineStore("ircStore", () => {
     client.requestCap("draft/metadata-2");
     client.requestCap("echo-message");
     client.requestCap("chathistory");
+    client.requestCap("draft/multiline");
     const tls = location.protocol === "https:";
     const connectParams = {
       host: location.hostname,
@@ -127,9 +135,27 @@ export const useIRCStore = defineStore("ircStore", () => {
     if (!bufferStore.activeBuffer) {
       return;
     }
-    if (bufferStore.activeBuffer.channel)
-      bufferStore.activeBuffer.channel.say(message);
-    else client.say(bufferStore.activeBuffer.name, message);
+    send(bufferStore.activeBuffer?.name, message);
+  }
+
+  function genBatchId(): string {
+    return Math.random().toString(36).substring(2, 10);
+  }
+
+  function send(target: string, message: string) {
+    if (!message.includes("\n")) {
+      client.say(target, message);
+      return;
+    }
+
+    const split = message.split("\n");
+
+    const batchId = genBatchId();
+    client.raw(`BATCH +${batchId} draft/multiline ${target}`);
+    split.forEach((line) => {
+      client.raw(`@batch=${batchId} PRIVMSG ${target} :${line}`);
+    });
+    client.raw(`BATCH -${batchId}`);
   }
 
   function isMe(target: string) {
@@ -143,6 +169,7 @@ export const useIRCStore = defineStore("ircStore", () => {
   }
 
   client.on("socket close", () => {
+    batches.clear();
     connected.value = false;
   });
 
@@ -242,7 +269,7 @@ export const useIRCStore = defineStore("ircStore", () => {
     },
   );
 
-  client.on("message", function (message: { nick: string; target: string }) {
+  function handleMessage(message: any) {
     let buffer;
 
     const retVal = runHook("message", message);
@@ -270,7 +297,25 @@ export const useIRCStore = defineStore("ircStore", () => {
     ) {
       buffer.resetLastSeen();
     }
-  });
+  }
+
+  client.on(
+    "message",
+    function (message: {
+      nick: string;
+      target: string;
+      tags: Record<string, string>;
+    }) {
+      const batchId = message.tags["batch"];
+
+      if (batchId && batches.has(batchId)) {
+        batches.get(batchId)?.messages.push(message);
+        return;
+      }
+
+      handleMessage(message);
+    },
+  );
 
   client.on("notice", function (message) {
     const retVal = runHook("notice", message);
@@ -333,6 +378,45 @@ export const useIRCStore = defineStore("ircStore", () => {
     const buffer = bufferStore.getBuffer(ev.channel);
     if (!buffer) return;
     buffer.users = ev.users;
+  });
+
+  client.on("batch start", (event: any) => {
+    batches.set(event.id, {
+      type: event.type,
+      target: event.params[0],
+      messages: [],
+      params: event.params,
+    });
+  });
+
+  function handleChatHistory(batch: Batch) {
+    for (const message of batch.messages) {
+      handleMessage(message);
+    }
+  }
+
+  function handleMultiline(batch: Batch) {
+    console.log(batch);
+    let m = "";
+    for (const message of batch.messages) {
+      m += `${message.message}\n`;
+    }
+    handleMessage({ ...batch.messages[0], message: m });
+  }
+
+  client.on("batch end draft/multiline", (event: any) => {
+    const batch = batches.get(event.id);
+    if (!batch) return;
+
+    handleMultiline(batch);
+    batches.delete(event.id);
+  });
+
+  client.on("batch end chathistory", (event: any) => {
+    const batch = batches.get(event.id);
+    if (!batch) return;
+    handleChatHistory(batch);
+    batches.delete(event.id);
   });
 
   return {

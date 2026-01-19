@@ -17,12 +17,16 @@ const accountStore = useAccountStore();
       <BufferList />
     </v-sheet>
     <div class="messages d-flex flex-column">
-      <v-toolbar density="compact">
-        <v-toolbar-title>
-          <p>{{ bufferStore.activeBufferName }}</p>
-          {{ bufferStore.activeBuffer?.topic }}
-        </v-toolbar-title>
-      </v-toolbar>
+      <v-card-title>
+        <v-row>
+          <v-col cols="2">
+            {{ bufferStore.activeBufferName }}
+          </v-col>
+          <v-col cols="3">
+            {{ bufferStore.activeBuffer?.topic }}
+          </v-col>
+        </v-row>
+      </v-card-title>
       <MessageList
         :messages="bufferStore.activeBuffer?.messages"
         :me="accountStore.account.nick"

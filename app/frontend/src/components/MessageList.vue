@@ -61,7 +61,7 @@ watch(
                 ><v-icon class="mr-2">mdi-eye</v-icon>Only visible to you
               </v-chip>
             </v-list-item-title>
-            {{ msg.message }}
+            <pre style="white-space: pre">{{ msg.message }}</pre>
           </v-list-item></template
         >
       </v-virtual-scroll>
