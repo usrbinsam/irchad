@@ -12,7 +12,9 @@
     "@fontsource/roboto": "^5.2.9",
     "@mdi/font": "^7.4.47",
     "buffer": "^6.0.3",
+    "dompurify": "^3.3.1",
     "irc-framework": "^4.14.0",
+    "markdown-it": "^14.1.0",
     "pinia": "^3.0.4",
     "vite-plugin-node-polyfills": "^0.25.0",
     "vue": "^3.2.37",
@@ -21,6 +23,8 @@
   "devDependencies": {
     "@babel/types": "^7.18.10",
     "@tsconfig/node22": "^22.0.5",
+    "@types/dompurify": "^3.0.5",
+    "@types/markdown-it": "^14.1.2",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/tsconfig": "^0.8.1",
     "eslint": "^9.39.2",

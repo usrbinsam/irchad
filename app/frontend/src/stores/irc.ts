@@ -4,6 +4,8 @@ import { Client } from "irc-framework";
 import { useBufferStore } from "./bufferStore";
 import { ref } from "vue";
 import { useAccountStore } from "./accountStore";
+import MarkdownIt from "markdown-it";
+import DOMPurify from "dompurify";
 
 export type HookFunction = (event: any) => HookStatus;
 
@@ -17,6 +19,39 @@ interface Batch {
   target: string;
   messages: any[];
   params: string[];
+}
+
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  typographer: true,
+});
+
+function renderMessage(msgIn: string) {
+  if (!msgIn) return "";
+  const dirty = md.render(msgIn);
+  return DOMPurify.sanitize(dirty, {
+    ALLOWED_TAGS: [
+      "li",
+      "ul",
+      "ol",
+      "b",
+      "i",
+      "em",
+      "strong",
+      "a",
+      "code",
+      "pre",
+      "br",
+      "p",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+    ],
+    ALLOWED_ATTR: ["href", "target", "class"],
+  });
 }
 
 export const useIRCStore = defineStore("ircStore", () => {
@@ -289,6 +324,7 @@ export const useIRCStore = defineStore("ircStore", () => {
       });
     }
 
+    message.message = renderMessage(message.message);
     buffer.messages.push(message);
 
     if (
