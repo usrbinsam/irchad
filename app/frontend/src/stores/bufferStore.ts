@@ -1,6 +1,6 @@
 import { Buffer, type BufferOptions } from "@/lib/buffer.ts";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, markRaw } from "vue";
 
 export const useBufferStore = defineStore("bufferStore", () => {
   const buffers = ref({} as Record<string, Buffer>);
@@ -8,14 +8,16 @@ export const useBufferStore = defineStore("bufferStore", () => {
   const activeBufferName = ref(null as string | null);
 
   function setActiveBuffer(bufferName: string) {
+    console.log("setting active buffer");
     const buffer = getBuffer(bufferName);
     if (!buffer) return;
     activeBufferName.value = bufferName;
     buffer.resetLastSeen();
+    console.log("active buffer is now", bufferName);
   }
 
   function addBuffer(bufferName: string, options: BufferOptions) {
-    buffers.value[bufferName] = new Buffer(options);
+    buffers.value[bufferName] = markRaw(new Buffer(options));
     return buffers.value[bufferName];
   }
 

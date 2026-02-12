@@ -18,6 +18,7 @@ export const useAccountStore = defineStore("accountStore", () => {
   function setAuthenticated(v: boolean) {
     authenticated.value = v;
   }
+
   function setNick(v: string) {
     account.value.nick = v;
   }
@@ -29,6 +30,5 @@ export const useAccountStore = defineStore("accountStore", () => {
     showRegistration,
     setAuthenticated,
     setNick,
-    showRegistration,
   };
 });

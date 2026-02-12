@@ -87,7 +87,7 @@ export const useIRCStore = defineStore("ircStore", () => {
     hooks[eventName].splice(idx, 1);
   }
 
-  const selfAvatar = ref("https://placekittens.com/128/128");
+  const selfAvatar = ref("https://makeameme.org/media/templates/gigachad.jpg");
   const bio = ref();
 
   loadPrefs();
@@ -161,6 +161,7 @@ export const useIRCStore = defineStore("ircStore", () => {
         : undefined,
       sasl_disconect_on_fail: true,
       nick: accountStore.account.nick,
+      gecos: accountStore.account.nick,
     };
 
     client.connect(connectParams);
@@ -249,12 +250,12 @@ export const useIRCStore = defineStore("ircStore", () => {
           console.log(`${buffName} not found`);
           continue;
         }
-        const idx = buff.users.findIndex((u) => u.nick === nick);
+        const idx = buff.users.value.findIndex((u) => u.nick === nick);
         if (idx === -1) {
           console.log(`${nick} not found in ${buffName}`);
           continue;
         }
-        buff.users[idx].nick = new_nick;
+        buff.users.value[idx].nick = new_nick;
       }
       metadata.value[new_nick] = { ...metadata.value[nick] };
       delete metadata.value[nick];
@@ -300,7 +301,24 @@ export const useIRCStore = defineStore("ircStore", () => {
       tags: string[];
       target: string;
     }) => {
-      console.log(nick, tags, target);
+      const buffer = bufferStore.getBuffer(target);
+      if (!buffer) return;
+
+      for (const [key, value] of Object.entries(tags)) {
+        console.log(key, value);
+        if (key === "+typing") {
+          if (value === "active") {
+            console.log("typing: ", nick);
+            if (!buffer.typing.includes(nick)) {
+              buffer.typing.push(nick);
+            }
+          } else {
+            console.log("not typing: ", nick);
+            const idx = buffer.typing.findIndex((n) => nick === n);
+            if (idx !== -1) buffer.typing.splice(idx, 1);
+          }
+        }
+      }
     },
   );
 
@@ -312,6 +330,7 @@ export const useIRCStore = defineStore("ircStore", () => {
 
     if (message.nick === "HistServ") return;
     if (isMe(message.target)) {
+      console.log("opening DM");
       buffer = bufferStore.getBuffer(message.nick);
     } else {
       buffer = bufferStore.getBuffer(message.target);
@@ -325,7 +344,7 @@ export const useIRCStore = defineStore("ircStore", () => {
     }
 
     message.message = renderMessage(message.message);
-    buffer.messages.push(message);
+    buffer.addMessage(message);
 
     if (
       bufferStore.activeBuffer &&
@@ -353,11 +372,11 @@ export const useIRCStore = defineStore("ircStore", () => {
     },
   );
 
-  client.on("notice", function (message) {
+  client.on("notice", function (message: any) {
     const retVal = runHook("notice", message);
     if (retVal === HookStatus.HOOK_EAT) return;
     if (bufferStore.activeBuffer) {
-      bufferStore.activeBuffer.messages.push({ ...message, kind: "notice" });
+      bufferStore.activeBuffer.addMessage({ ...message, kind: "notice" });
     }
   });
 
@@ -377,16 +396,16 @@ export const useIRCStore = defineStore("ircStore", () => {
     const buffer = bufferStore.getBuffer(channel);
     if (!buffer) return;
     buffer.syncUsers();
-    buffer.users.push({
+    buffer.users.value.push({
       nick: nick,
     });
   });
 
   client.on("quit", function ({ nick }: { nick: string }) {
     for (let buff of Object.values(bufferStore.buffers)) {
-      const idx = buff.users.findIndex((u) => u.nick === nick);
+      const idx = buff.users.value.findIndex((u) => u.nick === nick);
       if (idx === -1) continue;
-      buff.users.splice(idx, 1);
+      buff.users.value.splice(idx, 1);
     }
   });
 
@@ -398,22 +417,23 @@ export const useIRCStore = defineStore("ircStore", () => {
       buffer.topic = topic;
     },
   );
+
   client.on("part", ({ nick, channel }: { nick: string; channel: string }) => {
     if (isMe(nick)) {
       bufferStore.delBuffer(channel);
     }
     const buffer = bufferStore.getBuffer(channel);
     if (!buffer) return;
-    const idx = buffer.users.findIndex((u) => u.nick === nick);
+    const idx = buffer.users.value.findIndex((u) => u.nick === nick);
     if (idx === -1) return;
 
-    buffer.users.splice(idx, 1);
+    buffer.users.value.splice(idx, 1);
   });
 
   client.on("userlist", (ev: { channel: string; users: any[] }) => {
     const buffer = bufferStore.getBuffer(ev.channel);
     if (!buffer) return;
-    buffer.users = ev.users;
+    buffer.users.value = ev.users;
   });
 
   client.on("batch start", (event: any) => {
@@ -426,16 +446,14 @@ export const useIRCStore = defineStore("ircStore", () => {
   });
 
   function handleChatHistory(batch: Batch) {
-    for (const message of batch.messages) {
-      handleMessage(message);
-    }
+    batch.messages.forEach(handleMessage);
   }
 
   function handleMultiline(batch: Batch) {
-    console.log(batch);
+    if (batch.messages.length === 0) return;
     let m = "";
-    for (const message of batch.messages) {
-      m += `${message.message}\n`;
+    for (const { message } of batch.messages) {
+      m += `${message}\n`;
     }
     handleMessage({ ...batch.messages[0], message: m });
   }
@@ -453,6 +471,10 @@ export const useIRCStore = defineStore("ircStore", () => {
     if (!batch) return;
     handleChatHistory(batch);
     batches.delete(event.id);
+  });
+
+  client.on("fail", (event) => {
+    console.log(event);
   });
 
   return {

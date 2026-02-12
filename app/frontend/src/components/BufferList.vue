@@ -1,8 +1,6 @@
 <script setup>
 import { useBufferStore } from "@/stores/bufferStore";
 const { setActiveBuffer, buffers, activeBufferName } = useBufferStore();
-
-const store = useBufferStore();
 </script>
 
 <template>
@@ -11,13 +9,14 @@ const store = useBufferStore();
     :selected="[activeBufferName]"
     @click:select="(item) => setActiveBuffer(item.id)"
   >
-    <v-list-item :value="bufName" v-for="(bufValue, bufName) in buffers">
+    <v-list-item
+      :value="bufName"
+      v-for="(bufValue, bufName) in buffers"
+      :key="bufName"
+    >
       {{ bufName }}
       <template v-slot:append>
-        <v-badge
-          :content="bufValue.messages.length - bufValue.lastSeenIdx"
-          inline
-        />
+        <v-badge :content="bufValue.unseenCount.value" inline />
       </template>
     </v-list-item>
   </v-list>

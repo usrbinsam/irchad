@@ -28,7 +28,7 @@ const accountStore = useAccountStore();
         </v-row>
       </v-card-title>
       <MessageList
-        :messages="bufferStore.activeBuffer?.messages"
+        :messages="bufferStore.activeBuffer?.messages.value"
         :me="accountStore.account.nick"
       />
       <v-sheet>
@@ -39,7 +39,7 @@ const accountStore = useAccountStore();
       </v-sheet>
     </div>
     <v-sheet class="user-list h-100" border>
-      <UserList :users="bufferStore.activeBuffer?.users" />
+      <UserList :users="bufferStore.activeBuffer?.users.value" />
     </v-sheet>
   </div>
 </template>

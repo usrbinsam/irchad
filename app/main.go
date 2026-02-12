@@ -18,7 +18,7 @@ func fixNvidiaOpenOnX11() {
 
 func main() {
 	// Create an instance of the app structure
-	fixNvidiaOpenOnX11()
+	// fixNvidiaOpenOnX11()
 	app := NewApp()
 
 	// Create application with options

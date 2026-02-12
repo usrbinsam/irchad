@@ -2,13 +2,19 @@
 import { useBufferStore } from "@/stores/bufferStore";
 import { useIRCStore } from "@/stores/irc";
 import { computed } from "vue";
-const props = defineProps(["users"]);
 const store = useIRCStore();
 const bufferStore = useBufferStore();
 
 const sortedUsers = computed(() => {
-  if (!bufferStore.activeBuffer || !bufferStore.activeBuffer.users) return [];
-  const u = [...bufferStore.activeBuffer.users];
+  const b = bufferStore.activeBuffer;
+  if (!b) {
+    return;
+  }
+  const allUsers = b.users;
+  if (!allUsers) {
+    return;
+  }
+  const u = [...allUsers.value];
   u.sort((a, b) => a.nick.localeCompare(b.nick));
   return u;
 });

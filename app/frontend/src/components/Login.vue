@@ -3,6 +3,8 @@ import { useAccountStore } from "@/stores/accountStore";
 import { useIRCStore } from "@/stores/irc";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import { onBeforeMount } from "vue";
+
 const accountStore = useAccountStore();
 const ircStore = useIRCStore();
 
@@ -12,7 +14,15 @@ const form = ref(false);
 const connecting = ref(false);
 
 const router = useRouter();
+const nickInUse = ref(false);
 
+onBeforeMount(() => {
+  ircStore.client.on("nick in use", () => {
+    nickInUse.value = true;
+    connecting.value = false;
+    ircStore.client.quit();
+  });
+});
 function login() {
   ircStore.connect();
   connecting.value = true;
@@ -50,6 +60,10 @@ function required(v: any) {
           />
           <v-alert color="error" v-if="accountStore.authError.reason">
             {{ accountStore.authError.message }}
+          </v-alert>
+          <v-alert v-if="nickInUse" color="error">
+            That nickname is already in use or registered to an account. Try a
+            different nickname, or login.
           </v-alert>
           <v-checkbox v-model="withAccount" label="Login with an account" />
         </v-card-text>
