@@ -308,14 +308,9 @@ export const useIRCStore = defineStore("ircStore", () => {
         console.log(key, value);
         if (key === "+typing") {
           if (value === "active") {
-            console.log("typing: ", nick);
-            if (!buffer.typing.includes(nick)) {
-              buffer.typing.push(nick);
-            }
+            buffer.typingActive(nick);
           } else {
-            console.log("not typing: ", nick);
-            const idx = buffer.typing.findIndex((n) => nick === n);
-            if (idx !== -1) buffer.typing.splice(idx, 1);
+            buffer.typingDone(nick);
           }
         }
       }
@@ -473,9 +468,9 @@ export const useIRCStore = defineStore("ircStore", () => {
     batches.delete(event.id);
   });
 
-  client.on("fail", (event) => {
-    console.log(event);
-  });
+  // client.on("fail", (event) => {
+  //   console.log(event);
+  // });
 
   return {
     connect,

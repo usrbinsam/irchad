@@ -7,7 +7,7 @@ export interface BufferOptions {
   channel: typeof IrcChannel;
   name: string;
   metadata?: Record<string, any>;
-  topic: string;
+  topic?: string;
 }
 
 type TypingInfo = {
