@@ -1,24 +1,7 @@
 <script lang="ts" setup>
 import { ref, useTemplateRef } from "vue";
 import { RemoteTrack, Room, RoomEvent, Track } from "livekit-client";
-// Intercept the WebRTC Engine directly
-const originalSetLocal = window.RTCPeerConnection.prototype.setLocalDescription;
-
-window.RTCPeerConnection.prototype.setLocalDescription = function (
-  desc?: RTCLocalSessionDescriptionInit,
-) {
-  if (desc && desc.sdp) {
-    console.log("--- INTERCEPTED LOCAL SDP ---");
-    const candidates = desc.sdp
-      .split("\n")
-      .filter((l) => l.includes("a=candidate"));
-    console.log(candidates);
-  }
-  return originalSetLocal.apply(this, arguments as any);
-};
-
 const room = ref(null as Room | null);
-
 const rootElement = useTemplateRef<HTMLDivElement>("root");
 
 defineExpose({ connect });
