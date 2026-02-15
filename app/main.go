@@ -2,40 +2,51 @@ package main
 
 import (
 	"embed"
-	"os"
+	"fmt"
+	"time"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"IrChad/internal/hack"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-//go:embed all:frontend/dist
+//go:embed frontend/dist
 var assets embed.FS
 
-func fixNvidiaOpenOnX11() {
-	_ = os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
-}
-
 func main() {
-	// Create an instance of the app structure
-	// fixNvidiaOpenOnX11()
-	app := NewApp()
+	app := application.New(
+		application.Options{
+			Name: "IrChad",
+			Assets: application.AssetOptions{
+				Handler: application.AssetFileServerFS(assets),
+			},
+		},
+	)
 
-	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "IrChad",
-		Width:  1024,
-		Height: 768,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
+	window := app.Window.NewWithOptions(
+		application.WebviewWindowOptions{
+			Title:  "IrChad",
+			Width:  1024,
+			Height: 768,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		Bind: []any{
-			app,
-		},
-	})
-	if err != nil {
-		println("Error:", err.Error())
+	)
+
+	// TODO: this should only run on Linux
+	go func() {
+		fmt.Printf("hacking window\n")
+		for {
+			time.Sleep(500 * time.Millisecond)
+			ptr := window.NativeWindow()
+			if ptr == nil {
+				continue
+			}
+			hack.HackAllowGetUserMedia(ptr)
+			fmt.Printf("webkit webcam permission bypass complete")
+			break
+		}
+	}()
+
+	if err := app.Run(); err != nil {
+		panic(err)
 	}
 }

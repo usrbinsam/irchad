@@ -5,19 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:dev": "vite build --minify false --mode development",
+    "build": "vite build --mode production",
     "preview": "vite preview"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.9",
     "@mdi/font": "^7.4.47",
+    "@wailsio/runtime": "^3.0.0-alpha.79",
     "buffer": "^6.0.3",
     "dompurify": "^3.3.1",
     "irc-framework": "^4.14.0",
+    "livekit-client": "^2.17.1",
     "markdown-it": "^14.1.0",
     "pinia": "^3.0.4",
     "vite-plugin-node-polyfills": "^0.25.0",
     "vue": "^3.2.37",
+    "vue-router": "^5.0.2",
     "vuetify": "^3.11.6"
   },
   "devDependencies": {

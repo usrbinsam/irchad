@@ -15,6 +15,9 @@ services:
       restart_policy:
         condition: on-failure
       replicas: 1
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
 
 volumes:
   data:

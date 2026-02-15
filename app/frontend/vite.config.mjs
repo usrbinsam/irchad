@@ -37,16 +37,20 @@ export default defineConfig({
     nodePolyfills({
       globals: {
         Buffer: true,
+        global: true,
+        process: true,
       },
+      protocolImports: true,
     }),
   ],
   optimizeDeps: {
     exclude: ["vuetify"],
   },
-  define: { "process.env": {} },
+  define: { "process.env": {}, "process.version": '"v20.0.0"' },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("src", import.meta.url)),
+      process: "vite-plugin-node-polyfills/shims/process",
     },
     extensions: [".js", ".json", ".jsx", ".mjs", ".ts", ".tsx", ".vue"],
   },
