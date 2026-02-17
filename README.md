@@ -1,5 +1,7 @@
 # IrChad
 
+:warning: This software is under active development and does not have any release builds yet!
+
 IrChad is an IRC client that tries to make the IRC experience feel more like Discord.
 The full power of an IRC experience for your normie friends that don't like or understand
 the traditional IRC experience. For seasoned IRC users, it will feel like a bad/
@@ -52,3 +54,9 @@ You will need:
 2. Start Ergo and LiveKit Server with `docker compose up -d`
 3. Connect to ergo with an IRC client and join some channels
 4. Start wails dev with `wails3 dev` in the `app/` folder
+
+### Useful links
+
+- [ergo manual](https://github.com/ergochat/ergo/blob/stable/docs/MANUAL.md)
+- [IRCv3](https://ircv3.net/irc/)
+- [Wails](https://v3alpha.wails.io/)
