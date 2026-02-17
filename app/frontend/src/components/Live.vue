@@ -1,6 +1,15 @@
 <script lang="ts" setup>
 import { ref, useTemplateRef } from "vue";
-import { RemoteTrack, Room, RoomEvent, Track } from "livekit-client";
+import {
+  LocalParticipant,
+  LocalTrackPublication,
+  Participant,
+  RemoteTrack,
+  RemoteTrackPublication,
+  Room,
+  RoomEvent,
+  Track,
+} from "livekit-client";
 const room = ref(null as Room | null);
 const rootElement = useTemplateRef<HTMLDivElement>("root");
 
@@ -11,7 +20,7 @@ function getToken() {
 }
 
 function getServerUrl() {
-  return "ws://10.10.10.106:7880";
+  return "ws://localhost:7880";
 }
 
 async function connect() {
@@ -23,32 +32,39 @@ async function connect() {
   const token = getToken();
   const url = getServerUrl();
   r.prepareConnection(url, token);
-  await navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: true,
-  });
 
-  r.on(RoomEvent.TrackSubscribed, handleTrackSubscribed).on(
-    RoomEvent.TrackUnsubscribed,
-    handleTrackUnsubscribed,
-  );
+  r.on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
+    .on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
+    .on(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakerChange)
+    .on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
+    .on(RoomEvent.Disconnected, handleDisconnect)
+    .on(RoomEvent.TrackPublished, handleTrackPublished);
 
   console.log("connecting to livekit", url);
   await r.connect(url, token, {
-    autoSubscribe: true,
+    autoSubscribe: false,
     rtcConfig: {
-      iceTransportPolicy: "all",
-      iceServers: [],
-      rtcpMuxPolicy: "require",
+      // iceTransportPolicy: "all",
+      // iceServers: [],
+      // rtcpMuxPolicy: "require",
       bundlePolicy: "max-bundle",
     },
   });
-  console.log("connected");
+  console.log("connected to ", r.name);
   await r.localParticipant.enableCameraAndMicrophone();
   room.value = r;
 }
 
+function handleTrackPublished(
+  publication: RemoteTrackPublication,
+  participant: Participant,
+) {
+  console.log("new track from - ", participant);
+  publication.setSubscribed(true);
+}
+
 function handleTrackSubscribed(track: RemoteTrack) {
+  console.log("handleTrackSubscribed()");
   if (track.kind === Track.Kind.Video || track.kind == Track.Kind.Audio) {
     console.log("track subscribed, adding element");
     const el = track.attach();
@@ -58,6 +74,21 @@ function handleTrackSubscribed(track: RemoteTrack) {
 
 function handleTrackUnsubscribed(track: RemoteTrack) {
   track.detach();
+
+  if (track.kind === "video") {
+    track.mediaStreamTrack.stop();
+  }
+}
+
+function handleLocalTrackUnpublished(publication: LocalTrackPublication) {
+  // when local tracks are ended, update UI to remove them from rendering
+  publication.track.detach();
+}
+function handleActiveSpeakerChange(speakers: Participant[]) {
+  console.log(speakers);
+}
+function handleDisconnect() {
+  console.log("disconnected from ", room.value!.name);
 }
 </script>
 <template>

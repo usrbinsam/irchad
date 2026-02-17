@@ -2,16 +2,14 @@
 import { useIRCStore } from "@/stores/irc";
 import { useBufferStore } from "@/stores/bufferStore";
 import { useAccountStore } from "@/stores/accountStore";
-import Live from "@/components/Live.vue";
+import Live from "@/components/Live/Live.vue";
+import { useLiveStore } from "@/stores/liveStore";
+import { connect as liveConnect } from "@/live/liveProxy";
 
 const bufferStore = useBufferStore();
 const ircStore = useIRCStore();
 const accountStore = useAccountStore();
-
-const live = useTemplateRef<InstanceType<typeof Live>>("live");
-function joinLive() {
-  live.value?.connect();
-}
+const liveStore = useLiveStore();
 </script>
 
 <template>
@@ -22,7 +20,7 @@ function joinLive() {
       <v-divider />
       <BufferList />
     </v-sheet>
-    <Live ref="live" />
+    <Live />
     <div class="messages d-flex flex-column">
       <v-card-title>
         <v-row>
@@ -31,9 +29,6 @@ function joinLive() {
           </v-col>
           <v-col cols="3">
             {{ bufferStore.activeBuffer?.topic }}
-          </v-col>
-          <v-col align="end">
-            <v-btn icon="mdi-volume-high" @click="joinLive"> </v-btn>
           </v-col>
         </v-row>
       </v-card-title>
@@ -57,7 +52,7 @@ function joinLive() {
 <style>
 .buffers {
   height: 100%;
-  flex: 1;
+  flex-shrink: 1;
 }
 
 .messages {
@@ -68,6 +63,6 @@ function joinLive() {
 
 .user-list {
   height: 100%;
-  flex: 1;
+  flex-shrink: 1;
 }
 </style>

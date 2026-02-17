@@ -32,6 +32,10 @@ void HackAllowGetUserMedia(void *handle) {
 import "C"
 import "unsafe"
 
+// HackAllowGetUserMedia takes a pointer to the main application window
+// and enables access to navigator.mediaDevices.getUserMedia()
+//
+// This is only needed until Wails v3 exposes this functionality natively.
 func HackAllowGetUserMedia(ptr unsafe.Pointer) {
 	C.HackAllowGetUserMedia(ptr)
 }

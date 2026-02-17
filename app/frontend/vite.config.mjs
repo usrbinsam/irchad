@@ -6,6 +6,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 import { defineConfig } from "vite";
 import { fileURLToPath, URL } from "node:url";
+import wails from "@wailsio/runtime/plugins/vite";
 
 export default defineConfig({
   plugins: [
@@ -42,6 +43,7 @@ export default defineConfig({
       },
       protocolImports: true,
     }),
+    wails("src/bindings"),
   ],
   optimizeDeps: {
     exclude: ["vuetify"],

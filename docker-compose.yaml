@@ -17,7 +17,8 @@ services:
       replicas: 1
   livekit:
     image: livekit/livekit-server:latest
-    ports:
+    command: ["--dev", "--bind=0.0.0.0"]
+    network_mode: host
 
 volumes:
   data:

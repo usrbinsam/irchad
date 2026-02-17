@@ -1,0 +1,62 @@
+import { Events } from "@wailsio/runtime";
+import { useLiveStore } from "@/stores/liveStore";
+import { Connect } from "@/bindings/IrChad/internal/live/livechat";
+
+const playConnectionChime = () => {
+  // Initialize the browser's native audio engine
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  // Configure a pleasant, soft double-chime (C5 jumping to E5)
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(523.25, ctx.currentTime); // Note C5
+  osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // Note E5
+
+  // Volume envelope: quick fade-in, smooth fade-out (prevents clicking)
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+  // Play and self-destruct
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.5);
+};
+
+export function setupEvents() {
+  Events.On("live:participant-connected", (event) => {
+    console.log("participant connected: ", event.data);
+    const store = useLiveStore();
+    store.addParticipant(event.data.Identity);
+  });
+
+  Events.On("live:participant-track-published", (event) => {
+    const store = useLiveStore();
+    const { data } = event;
+    store.addTrack(data.Identity, {
+      id: data.TrackID,
+      kind: data.Kind,
+      source: data.Source,
+      subscribeURL: data.SubscribeURL,
+      show: data.Show,
+    });
+    console.log("new track " + data.Kind + " : ", data);
+  });
+
+  Events.On("live:participant-dissconnected", (event) => {
+    const store = useLiveStore();
+    const { data } = event;
+    store.dropParticipant(data.Identity);
+  });
+
+  console.log("live events registered");
+}
+
+export async function connect(channel: string) {
+  await Connect(channel);
+  playConnectionChime();
+  useLiveStore().setConnected(channel);
+}

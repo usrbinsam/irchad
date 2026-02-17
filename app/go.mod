@@ -3,8 +3,10 @@ module IrChad
 go 1.25
 
 require (
+	github.com/livekit/protocol v1.44.1-0.20260120134243-0914cc74653e
 	github.com/livekit/server-sdk-go/v2 v2.13.3
 	github.com/pion/mediadevices v0.9.4
+	github.com/pion/webrtc/v4 v4.2.6
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.71
 )
 
@@ -54,7 +56,6 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.2.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20251128105421-19c7a7b81c22 // indirect
-	github.com/livekit/protocol v1.44.1-0.20260120134243-0914cc74653e // indirect
 	github.com/livekit/psrpc v0.7.1 // indirect
 	github.com/lmittmann/tint v1.1.2 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
@@ -79,7 +80,6 @@ require (
 	github.com/pion/stun/v3 v3.1.1 // indirect
 	github.com/pion/transport/v4 v4.0.1 // indirect
 	github.com/pion/turn/v4 v4.1.4 // indirect
-	github.com/pion/webrtc/v4 v4.2.6 // indirect
 	github.com/pjbgf/sha1cd v0.5.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect

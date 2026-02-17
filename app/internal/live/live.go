@@ -1,29 +1,35 @@
 package live
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/livekit/protocol/auth"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/mediadevices"
 	"github.com/pion/mediadevices/pkg/codec/opus"
 	"github.com/pion/mediadevices/pkg/codec/x264"
 	"github.com/pion/mediadevices/pkg/frame"
 	"github.com/pion/mediadevices/pkg/prop"
+	"github.com/pion/webrtc/v4"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func NewLiveChat(url string) *LiveChat {
 	return &LiveChat{
-		url:          "",
-		room:         nil,
-		roomCallback: nil,
+		url:      url,
+		room:     nil,
+		registry: NewStreamRegistry(),
 	}
 }
 
 type LiveChat struct {
-	url          string
-	room         *lksdk.Room
-	roomCallback *lksdk.RoomCallback
+	url           string
+	room          *lksdk.Room
+	registry      *StreamRegistry
+	decoderServer *httpServer // provides decoded video/audio streams when connected to a room
 }
 
 func codecSelector() *mediadevices.CodecSelector {
@@ -44,18 +50,66 @@ func codecSelector() *mediadevices.CodecSelector {
 	)
 }
 
-func (l *LiveChat) getToken() string {
-	// FIXME: get token from livekit-server wrapper
-	return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzExOTg2MjAsImlkZW50aXR5IjoiY2hhZCIsImlzcyI6ImRldmtleSIsIm5hbWUiOiJjaGFkIiwibmJmIjoxNzcxMTEyMjIwLCJzdWIiOiJjaGFkIiwidmlkZW8iOnsicm9vbSI6IiNjaGFkIiwicm9vbUpvaW4iOnRydWV9fQ.kKrUUVUVVe3OCHw_CGL24LHEzbQyNXR42R_JvDyWXz"
+func (l *LiveChat) getToken(identity, room string) (string, error) {
+	at := auth.NewAccessToken("devkey", "secret")
+	videoGrant := &auth.VideoGrant{
+		RoomJoin: true,
+		Room:     room,
+	}
+
+	sipGrant := &auth.SIPGrant{
+		Admin: false,
+		Call:  true,
+	}
+
+	at.SetSIPGrant(sipGrant).SetVideoGrant(videoGrant).SetIdentity(identity).SetValidFor(time.Hour)
+	return at.ToJWT()
+}
+
+func (l *LiveChat) onParticipantConnected(rp *lksdk.RemoteParticipant) {
+	app := application.Get()
+	app.Event.Emit(
+		EventParticipantConnected,
+		ParticipantConnected{Identity: rp.Identity(), Channel: l.room.Name()},
+	)
+
+	log.Printf("available tracks:\n")
+	for _, pub := range rp.TrackPublications() {
+		log.Printf("%+v\n", pub)
+	}
+}
+
+func (l *LiveChat) onParticipantDisconnected(rp *lksdk.RemoteParticipant) {
+	app := application.Get()
+	app.Event.Emit(
+		EventParticipantDisconnected,
+		ParticipantDisconnected{
+			Identity: rp.Identity(),
+			Channel:  rp.Name(),
+		},
+	)
 }
 
 func (l *LiveChat) Connect(channelName string) error {
-	log.Printf("connecting to %s", channelName)
-	// XXX: this might need to be a goroutine?
+	log.Printf("connecting to %s on %s", channelName, l.url)
+
+	cb := &lksdk.RoomCallback{
+		OnParticipantConnected:    l.onParticipantConnected,
+		OnParticipantDisconnected: l.onParticipantDisconnected,
+		ParticipantCallback: lksdk.ParticipantCallback{
+			OnTrackSubscribed: l.onTrackSubscribed,
+		},
+	}
+
+	token, err := l.getToken("chad", channelName)
+	if err != nil {
+		log.Fatalf("error getting join token: %s", err.Error())
+	}
+
 	room, err := lksdk.ConnectToRoomWithToken(
 		l.url,
-		l.getToken(),
-		l.roomCallback,
+		token,
+		cb,
 	)
 	if err != nil {
 		log.Printf("failed to connect to channel: %s", err.Error())
@@ -63,7 +117,33 @@ func (l *LiveChat) Connect(channelName string) error {
 	}
 	l.room = room
 	log.Printf("connected to %s", channelName)
+
+	l.startDecodeServer()
+
+	app := application.Get()
+	for _, rp := range l.room.GetRemoteParticipants() {
+		app.Event.Emit(
+			EventParticipantConnected,
+			ParticipantConnected{
+				Identity: rp.Identity(),
+			},
+		)
+	}
+
 	return nil
+}
+
+func (l *LiveChat) Disconnect(ctx context.Context) {
+	if l.decoderServer != nil {
+		serverCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		l.decoderServer.Shutdown(serverCtx)
+		l.decoderServer = nil
+	}
+	if l.room != nil {
+		l.room.Disconnect()
+		l.room = nil
+	}
 }
 
 func (l *LiveChat) Connected() bool {
@@ -97,6 +177,47 @@ func (l *LiveChat) PublishWebcam() error {
 	log.Printf("publlished webcam track: %+v", webcam)
 
 	return err
+}
+
+func (l *LiveChat) onTrackSubscribed(
+	track *webrtc.TrackRemote,
+	publication *lksdk.RemoteTrackPublication,
+	rp *lksdk.RemoteParticipant,
+) {
+	identity := rp.Identity()
+	trackID := track.ID()
+	log.Printf("track subscribed: %s/%s\n", l.room.Name(), rp.Identity())
+
+	kind := track.Kind()
+	app := application.Get()
+	switch kind {
+	case webrtc.RTPCodecTypeVideo:
+		_, err := l.decodeVideoStream(track, publication, rp)
+		if err != nil {
+			log.Fatalf("decodeVideoStream() error - %s", err.Error())
+		}
+
+	case webrtc.RTPCodecTypeAudio:
+		l.decodeAudioStream(track, publication, rp)
+	}
+
+	ev := ParticipantTrackPublished{
+		Identity: identity,
+		TrackID:  trackID,
+		Source:   publication.Source().String(),
+		Kind:     track.Kind().String(),
+		SubscribeURL: fmt.Sprintf(
+			"http://%s/stream?pid=%s&tid=%s",
+			l.decoderServer.Addr(),
+			identity,
+			trackID,
+		),
+	}
+
+	log.Printf("Published: %+v", ev)
+	app.Event.Emit(
+		EventParticipantTrackPublished, ev,
+	)
 }
 
 func getMediaDevices() mediadevices.MediaStream {
