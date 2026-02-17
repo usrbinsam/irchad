@@ -40,26 +40,13 @@ See [Issues](https://github.com/usrbinsam/irchad/issues).
 
 You will need:
 
-- [Wails](https://wails.io/)
+- [Go](https://go.dev/doc/install)
+- [Wails v3](https://v3alpha.wails.io/)
 - [npm](https://npmjs.org/)
 - [Docker](https://docs.docker.com/get-started/get-docker/) (or something to run
   containers)
-- [Task](https://taskfile.dev/) (optional)
+- [Task](https://taskfile.dev/)
 
-1. Start ergo with `docker compose up`
+1. Start Ergo and LiveKit Server with `docker compose up -d`
 2. Connect to ergo with an IRC client and join some channels
-3. Start wails dev with `task dev`
-
-## LiveKit development on Linux
-
-On Linux, Wails uses webkit-gtk, which has experimental WebRTC support.
-Most distributions do not enable WebRTC support by default, so you will
-likely need to compile your own copy of webkit-gtk, and install some
-gst plugins.
-
-- Compile with `-DENABLE_WEB_RTC=1`
-- media-plugins/gst-plugins-webrtc
-- media-plugins/gst-plugins-srtp
-- media-plugins/gst-plugins-dtls
-- media-plugins/gst-plugins-libnice
-- media-plugins/gst-plugins-faac
+3. Start wails dev with `wails3 dev` in the `app/` folder
