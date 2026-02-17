@@ -48,6 +48,7 @@ You will need:
   containers)
 - [Task](https://taskfile.dev/)
 
-1. Start Ergo and LiveKit Server with `docker compose up -d`
-2. Connect to ergo with an IRC client and join some channels
-3. Start wails dev with `wails3 dev` in the `app/` folder
+1. Rename `ircd.test.yaml` -> `ircd.yaml`
+2. Start Ergo and LiveKit Server with `docker compose up -d`
+3. Connect to ergo with an IRC client and join some channels
+4. Start wails dev with `wails3 dev` in the `app/` folder
