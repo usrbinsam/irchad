@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useLiveStore, type Track } from "@/stores/liveStore";
+import { useLiveStore } from "@/stores/liveStore";
 const liveStore = useLiveStore();
 </script>
 

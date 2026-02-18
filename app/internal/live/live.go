@@ -3,7 +3,9 @@ package live
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/livekit/protocol/auth"
@@ -151,7 +153,7 @@ func (l *LiveChat) Connected() bool {
 		return false
 	}
 
-	return l.room.ConnectionState() != lksdk.ConnectionStateConnected
+	return l.room.ConnectionState() == lksdk.ConnectionStateConnected
 }
 
 func (l *LiveChat) PublishWebcam() error {
@@ -175,6 +177,36 @@ func (l *LiveChat) PublishWebcam() error {
 	)
 
 	log.Printf("publlished webcam track: %+v", webcam)
+
+	return err
+}
+
+func (l *LiveChat) PublishMicrophone() error {
+	if !l.Connected() {
+		return fmt.Errorf("cannot publish mic: not connected to a room")
+	}
+
+	ffmpegIn, err := ffmpegMicCapture()
+	if err != nil {
+		return err
+	}
+
+	track, err := lksdk.NewLocalReaderTrack(
+		ffmpegIn,
+		webrtc.MimeTypeOpus,
+		lksdk.ReaderTrackWithFrameDuration(20*time.Millisecond),
+		lksdk.ReaderTrackWithOnWriteComplete(func() { log.Println("microphone streaming ended") }),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = l.room.LocalParticipant.PublishTrack(
+		track,
+		&lksdk.TrackPublicationOptions{
+			Name: "mic",
+		},
+	)
 
 	return err
 }
@@ -237,4 +269,38 @@ func getMediaDevices() mediadevices.MediaStream {
 	}
 
 	return stream
+}
+
+func ffmpegMicCapture() (io.ReadCloser, error) {
+	cmd := exec.Command(
+		"ffmpeg",
+		"-f",
+		"pulse",
+		"-i",
+		"default",
+		"-c:a",
+		"libopus",
+		"-b:a",
+		"64k",
+		"-vbr",
+		"on",
+		"-f",
+		"opus",
+		"pipe:1",
+	)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		cmd.Wait()
+	}()
+
+	return stdout, err
 }

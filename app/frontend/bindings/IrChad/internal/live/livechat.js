@@ -31,6 +31,13 @@ export function Disconnect() {
 /**
  * @returns {$CancellablePromise<void>}
  */
+export function PublishMicrophone() {
+    return $Call.ByID(762739442);
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
 export function PublishWebcam() {
     return $Call.ByID(2617723007);
 }

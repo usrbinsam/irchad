@@ -1,6 +1,10 @@
 import { Events } from "@wailsio/runtime";
 import { useLiveStore } from "@/stores/liveStore";
-import { Connect } from "@/bindings/IrChad/internal/live/livechat";
+import {
+  Connect,
+  Disconnect,
+  PublishMicrophone,
+} from "@/bindings/IrChad/internal/live/livechat";
 
 const playConnectionChime = () => {
   // Initialize the browser's native audio engine
@@ -59,4 +63,20 @@ export async function connect(channel: string) {
   await Connect(channel);
   playConnectionChime();
   useLiveStore().setConnected(channel);
+}
+
+export async function disconnect() {
+  const store = useLiveStore();
+  await Disconnect();
+
+  store.setConnected("");
+  store.participants.clear();
+  store.channels.clear();
+}
+
+export async function publishMic() {
+  const store = useLiveStore();
+  const rv = await PublishMicrophone();
+  console.log(rv);
+  store.micEnabled = true;
 }

@@ -4,7 +4,6 @@ import { useBufferStore } from "@/stores/bufferStore";
 import { useAccountStore } from "@/stores/accountStore";
 import Live from "@/components/Live/Live.vue";
 import { useLiveStore } from "@/stores/liveStore";
-import { connect as liveConnect } from "@/live/liveProxy";
 
 const bufferStore = useBufferStore();
 const ircStore = useIRCStore();
@@ -20,7 +19,7 @@ const liveStore = useLiveStore();
       <v-divider />
       <BufferList class="buffer-list" />
       <v-divider />
-      <LiveControls class="live-controls" />
+      <LiveControls v-if="!!liveStore.connected" class="live-controls" />
     </v-sheet>
     <Live />
     <div class="messages d-flex flex-column">

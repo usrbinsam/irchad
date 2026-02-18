@@ -17,6 +17,10 @@ export function Disconnect(): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.Disconnect");
 }
 
+export function PublishMicrophone(): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.PublishMicrophone");
+}
+
 export function PublishWebcam(): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.PublishWebcam");
 }
