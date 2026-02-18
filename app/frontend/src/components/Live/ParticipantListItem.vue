@@ -12,8 +12,10 @@ const trackVideos = computed(() => {
 
   for (const t of props.participant.tracks.values()) {
     if (t.kind.toLowerCase() !== "video") continue;
+
+    const icon = t.source === "camera" ? "mdi-video-box" : "mdi-monitor";
     out.push({
-      icon: "mdi-video-box",
+      icon,
       trackId: t.id,
     });
   }

@@ -15,10 +15,12 @@ const liveStore = useLiveStore();
 <template>
   <div class="d-flex flex-row" style="height: 100vh">
     <router-view />
-    <v-sheet border class="buffers">
-      <UserCard />
+    <v-sheet border class="left-pane">
+      <UserCard class="user-card" />
       <v-divider />
-      <BufferList />
+      <BufferList class="buffer-list" />
+      <v-divider />
+      <LiveControls class="live-controls" />
     </v-sheet>
     <Live />
     <div class="messages d-flex flex-column">
@@ -50,8 +52,9 @@ const liveStore = useLiveStore();
 </template>
 
 <style>
-.buffers {
-  height: 100%;
+.left-pane {
+  display: flex;
+  flex-direction: column;
   flex-shrink: 1;
 }
 
@@ -63,6 +66,14 @@ const liveStore = useLiveStore();
 
 .user-list {
   height: 100%;
+  flex-shrink: 1;
+}
+
+.buffer-list {
+  overflow-y: auto;
+  height: 100%;
+}
+.live-controls {
   flex-shrink: 1;
 }
 </style>
