@@ -49,6 +49,7 @@ You will need:
 - [Docker](https://docs.docker.com/get-started/get-docker/) (or something to run
   containers)
 - [Task](https://taskfile.dev/)
+- [ffmpeg](https://www.ffmpeg.org/) + [libopus](https://opus-codec.org/downloads/) (if testing voice/video)
 
 1. Rename `ircd.test.yaml` -> `ircd.yaml`
 2. Start Ergo and LiveKit Server with `docker compose up -d`
