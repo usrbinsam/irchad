@@ -1,7 +1,6 @@
 package live
 
 import (
-	"log"
 	"os"
 	"time"
 
@@ -26,12 +25,12 @@ func NewScreenShare(w *WindowData) (*StreamedProcess, error) {
 	return proc, nil
 }
 
-func PublishScreenShare(room *lksdk.Room, proc *StreamedProcess) error {
+func PublishScreenShare(room *lksdk.Room, proc *StreamedProcess, endCallback func()) error {
 	return proc.Publish(
 		room,
 		webrtc.MimeTypeH264,
 		33*time.Millisecond,
-		func() { log.Println("screnshare streaming ended") },
+		endCallback,
 		&lksdk.TrackPublicationOptions{
 			Name:   "screen",
 			Source: livekit.TrackSource_SCREEN_SHARE,

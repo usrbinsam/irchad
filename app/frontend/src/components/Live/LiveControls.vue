@@ -5,7 +5,9 @@ import {
   publishMic,
   publishCamera,
   unpublishCamera,
+  unpublishScreenShare,
 } from "@/live/liveProxy";
+
 const liveStore = useLiveStore();
 const { screenShareDialog } = storeToRefs(liveStore);
 </script>
@@ -13,6 +15,12 @@ const { screenShareDialog } = storeToRefs(liveStore);
 <template>
   <v-card>
     <v-card-text>
+      <v-sheet rounded="30" v-if="liveStore.screenShareEnabled">
+        <v-icon color="error" class="mr-1" @click="unpublishScreenShare"
+          >mdi-monitor-off</v-icon
+        >
+        Screen sharing is active
+      </v-sheet>
       <p class="text-center">
         <v-icon class="mr-1 text-success">mdi-play-network</v-icon>
         <span class="font-weight-bold">{{ liveStore.connected }}</span>
@@ -55,6 +63,7 @@ const { screenShareDialog } = storeToRefs(liveStore);
           size="small"
           icon="mdi-monitor"
           variant="text"
+          :color="liveStore.screenShareEnabled ? 'success' : 'grey'"
           @click="screenShareDialog = true"
         ></v-btn>
         <v-btn

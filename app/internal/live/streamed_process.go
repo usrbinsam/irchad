@@ -3,7 +3,6 @@ package live
 import (
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"time"
 
@@ -41,7 +40,7 @@ func (p *StreamedProcess) Read(b []byte) (int, error) {
 }
 
 func (p *StreamedProcess) Stop() error {
-	err := p.cmd.Process.Signal(os.Interrupt)
+	err := p.cmd.Process.Kill()
 	if err != nil {
 		return err
 	}

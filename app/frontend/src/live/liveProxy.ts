@@ -8,6 +8,7 @@ import {
   UnpublishWebcam,
   GetWindows,
   PublishScreenShare,
+  UnpublishScreenShare,
 } from "@/bindings/IrChad/internal/live/livechat";
 
 const playConnectionChime = () => {
@@ -60,6 +61,10 @@ export function setupEvents() {
     store.dropParticipant(data.Identity);
   });
 
+  Events.On("live:screen-share-closed", () => {
+    useLiveStore().screenShareEnabled = false;
+  });
+
   console.log("live events registered");
 }
 
@@ -103,7 +108,11 @@ export async function getWindows() {
 }
 
 export async function shareWindow(id: number) {
-  const rv = await PublishScreenShare(id);
-  console.log(rv);
-  console.log("screen sharing activated");
+  await PublishScreenShare(id);
+  useLiveStore().screenShareEnabled = true;
+}
+
+export async function unpublishScreenShare() {
+  await UnpublishScreenShare();
+  useLiveStore().screenShareEnabled = false;
 }

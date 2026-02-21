@@ -344,7 +344,10 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 		_ = screenShare.Close()
 	}()
 
-	err = PublishScreenShare(l.room, screenShare)
+	err = PublishScreenShare(l.room, screenShare, func() {
+		// screenShare.Close()
+		application.Get().Event.Emit(EventScreenShareClosed)
+	})
 	if err != nil {
 		return err
 	}

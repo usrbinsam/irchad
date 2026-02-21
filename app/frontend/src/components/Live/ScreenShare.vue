@@ -10,6 +10,7 @@ const windowList = ref([] as WindowData[]);
 const selectedWindow = ref(0);
 async function share() {
   await shareWindow(selectedWindow.value);
+  screenShareDialog.value = false;
 }
 onMounted(async () => (windowList.value = await getWindows()));
 </script>

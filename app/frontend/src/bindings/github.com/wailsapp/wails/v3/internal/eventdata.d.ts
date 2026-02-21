@@ -15,6 +15,7 @@ declare module "@wailsio/runtime" {
             "live:participant-connected": live$0.ParticipantConnected;
             "live:participant-dissconnected": live$0.ParticipantDisconnected;
             "live:participant-track-published": live$0.ParticipantTrackPublished;
+            "live:screen-share-closed": any;
         }
     }
 }

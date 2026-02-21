@@ -6,6 +6,7 @@ const (
 	EventParticipantConnected      = "live:participant-connected"
 	EventParticipantDisconnected   = "live:participant-dissconnected"
 	EventParticipantTrackPublished = "live:participant-track-published"
+	EventScreenShareClosed         = "live:screen-share-closed"
 )
 
 type ParticipantConnected struct {
@@ -31,4 +32,5 @@ func RegisterEvents() {
 	application.RegisterEvent[ParticipantConnected](EventParticipantConnected)
 	application.RegisterEvent[ParticipantDisconnected](EventParticipantDisconnected)
 	application.RegisterEvent[ParticipantTrackPublished](EventParticipantTrackPublished)
+	application.RegisterEvent[any](EventScreenShareClosed)
 }
