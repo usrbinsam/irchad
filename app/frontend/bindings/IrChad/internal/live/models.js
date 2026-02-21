@@ -138,3 +138,66 @@ export class ParticipantTrackPublished {
         return new ParticipantTrackPublished(/** @type {Partial<ParticipantTrackPublished>} */($$parsedSource));
     }
 }
+
+export class WindowData {
+    /**
+     * Creates a new WindowData instance.
+     * @param {Partial<WindowData>} [$$source = {}] - The source object to create the WindowData.
+     */
+    constructor($$source = {}) {
+        if (!("ID" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["ID"] = 0;
+        }
+        if (!("Title" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["Title"] = "";
+        }
+        if (!("X" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["X"] = 0;
+        }
+        if (!("Y" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["Y"] = 0;
+        }
+        if (!("W" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["W"] = 0;
+        }
+        if (!("H" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["H"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new WindowData instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {WindowData}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new WindowData(/** @type {Partial<WindowData>} */($$parsedSource));
+    }
+}

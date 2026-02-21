@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { useLiveStore } from "@/stores/liveStore";
-import { disconnect, publishMic } from "@/live/liveProxy";
+import {
+  disconnect,
+  publishMic,
+  publishCamera,
+  unpublishCamera,
+} from "@/live/liveProxy";
 const liveStore = useLiveStore();
+const { screenShareDialog } = storeToRefs(liveStore);
 </script>
 
 <template>
@@ -23,14 +29,34 @@ const liveStore = useLiveStore();
         <v-btn
           size="small"
           icon="mdi-microphone-off"
-          v-else="liveStore.micEnabled"
+          v-else
           variant="text"
           color="error"
           @click="publishMic"
         />
-        <v-btn size="small" icon="mdi-webcam" variant="text"></v-btn>
 
-        <v-btn size="small" icon="mdi-monitor" variant="text"></v-btn>
+        <v-btn
+          size="small"
+          icon="mdi-webcam-off"
+          v-if="!liveStore.camEnabled"
+          color="error"
+          variant="text"
+          @click="publishCamera"
+        ></v-btn>
+        <v-btn
+          size="small"
+          icon="mdi-webcam"
+          v-else
+          variant="text"
+          @click="unpublishCamera"
+        ></v-btn>
+
+        <v-btn
+          size="small"
+          icon="mdi-monitor"
+          variant="text"
+          @click="screenShareDialog = true"
+        ></v-btn>
         <v-btn
           size="small"
           icon="mdi-exit-run"

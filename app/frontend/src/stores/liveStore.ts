@@ -23,6 +23,7 @@ export const useLiveStore = defineStore("liveStore", () => {
   const connected = ref("");
   const micEnabled = ref(false);
   const camEnabled = ref(false);
+  const screenShareDialog = ref(false);
 
   function addParticipant(identity: string) {
     participants.value.set(identity, {
@@ -53,13 +54,23 @@ export const useLiveStore = defineStore("liveStore", () => {
     t.show = true;
   }
 
+  function reset() {
+    setConnected("");
+    participants.value.clear();
+    channels.value.clear();
+    micEnabled.value = false;
+    camEnabled.value = false;
+  }
+
   return {
     connected,
     participants,
     channels,
     camEnabled,
     micEnabled,
+    screenShareDialog,
     setConnected,
+    reset,
     addParticipant,
     addTrack,
     dropParticipant,

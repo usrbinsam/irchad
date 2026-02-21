@@ -10,5 +10,6 @@ export {
 export {
     ParticipantConnected,
     ParticipantDisconnected,
-    ParticipantTrackPublished
+    ParticipantTrackPublished,
+    WindowData
 } from "./models.js";

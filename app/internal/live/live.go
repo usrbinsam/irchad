@@ -3,18 +3,11 @@ package live
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
-	"os/exec"
 	"time"
 
 	"github.com/livekit/protocol/auth"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/pion/mediadevices"
-	"github.com/pion/mediadevices/pkg/codec/opus"
-	"github.com/pion/mediadevices/pkg/codec/x264"
-	"github.com/pion/mediadevices/pkg/frame"
-	"github.com/pion/mediadevices/pkg/prop"
 	"github.com/pion/webrtc/v4"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -32,24 +25,10 @@ type LiveChat struct {
 	room          *lksdk.Room
 	registry      *StreamRegistry
 	decoderServer *httpServer // provides decoded video/audio streams when connected to a room
-}
 
-func codecSelector() *mediadevices.CodecSelector {
-	x264Params, err := x264.NewParams()
-	if err != nil {
-		panic(err)
-	}
-	x264Params.BitRate = 500_000 // 500kbps
-
-	opusParams, err := opus.NewParams()
-	if err != nil {
-		panic(err)
-	}
-
-	return mediadevices.NewCodecSelector(
-		mediadevices.WithVideoEncoders(&x264Params),
-		mediadevices.WithAudioEncoders(&opusParams),
-	)
+	microphone *StreamedProcess
+	camera     *StreamedProcess
+	screen     *StreamedProcess
 }
 
 func (l *LiveChat) getToken(identity, room string) (string, error) {
@@ -137,11 +116,14 @@ func (l *LiveChat) Connect(channelName string) error {
 
 func (l *LiveChat) Disconnect(ctx context.Context) {
 	if l.decoderServer != nil {
-		serverCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		serverCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 		defer cancel()
 		l.decoderServer.Shutdown(serverCtx)
 		l.decoderServer = nil
 	}
+
+	l.UnpublishMic()
+
 	if l.room != nil {
 		l.room.Disconnect()
 		l.room = nil
@@ -156,59 +138,108 @@ func (l *LiveChat) Connected() bool {
 	return l.room.ConnectionState() == lksdk.ConnectionStateConnected
 }
 
-func (l *LiveChat) PublishWebcam() error {
-	if !l.Connected() {
-		return fmt.Errorf("cannot publish webcam: room not connected")
-	}
-
-	stream := getMediaDevices()
-	videoTracks := stream.GetVideoTracks()
-
-	if len(videoTracks) == 0 {
-		return fmt.Errorf("cannot publish webcam: no webcam detected")
-	}
-
-	webcam := videoTracks[0]
-	_, err := l.room.LocalParticipant.PublishTrack(
-		webcam,
-		&lksdk.TrackPublicationOptions{
-			Name: "webcam",
-		},
-	)
-
-	log.Printf("publlished webcam track: %+v", webcam)
-
-	return err
-}
-
 func (l *LiveChat) PublishMicrophone() error {
 	if !l.Connected() {
 		return fmt.Errorf("cannot publish mic: not connected to a room")
 	}
 
-	ffmpegIn, err := ffmpegMicCapture()
+	if l.microphone != nil {
+		return fmt.Errorf("cannot publish mic: mic already on")
+	}
+
+	microphone, err := NewMicrophone()
 	if err != nil {
 		return err
 	}
 
-	track, err := lksdk.NewLocalReaderTrack(
-		ffmpegIn,
-		webrtc.MimeTypeOpus,
-		lksdk.ReaderTrackWithFrameDuration(20*time.Millisecond),
-		lksdk.ReaderTrackWithOnWriteComplete(func() { log.Println("microphone streaming ended") }),
-	)
+	err = microphone.Start()
 	if err != nil {
 		return err
 	}
 
-	_, err = l.room.LocalParticipant.PublishTrack(
-		track,
-		&lksdk.TrackPublicationOptions{
-			Name: "mic",
-		},
-	)
+	defer func() {
+		if err == nil {
+			return
+		}
+		log.Println("failed to publish microphone, cleaning up mic stream")
+		_ = microphone.Close()
+	}()
 
-	return err
+	err = PublishMicrophone(l.room, microphone)
+	if err != nil {
+		return err
+	}
+
+	l.microphone = microphone
+
+	return nil
+}
+
+func (l *LiveChat) UnpublishMic() {
+	if l.microphone == nil {
+		return
+	}
+
+	sid := l.microphone.SID()
+	if sid != "" {
+		l.room.LocalParticipant.UnpublishTrack(sid)
+	}
+	_ = l.microphone.Close()
+	l.microphone = nil
+}
+
+func (l *LiveChat) UnpublishWebcam() {
+	if l.camera == nil {
+		return
+	}
+
+	sid := l.camera.SID()
+	if sid != "" {
+		l.room.LocalParticipant.UnpublishTrack(sid)
+	}
+	_ = l.camera.Close()
+	l.camera = nil
+}
+
+func (l *LiveChat) PublishWebcam() error {
+	if !l.Connected() {
+		return fmt.Errorf("cannot publish cam: not connected to a room")
+	}
+
+	if l.camera != nil {
+		return fmt.Errorf("cannot publish cam: cam already on")
+	}
+
+	cam, err := NewWebcam()
+	if err != nil {
+		return err
+	}
+
+	err = cam.Start()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err == nil {
+			return
+		}
+		log.Println("failed to publish webcam, cleaning up webcam stream")
+		_ = cam.Close()
+	}()
+
+	err = PublishWebcam(l.room, cam)
+	if err != nil {
+		return err
+	}
+
+	l.camera = cam
+
+	return nil
+}
+
+func (l *LiveChat) SetMicMuted(muted bool) {
+	l.microphone.SetMuted(muted)
 }
 
 func (l *LiveChat) onTrackSubscribed(
@@ -252,55 +283,73 @@ func (l *LiveChat) onTrackSubscribed(
 	)
 }
 
-func getMediaDevices() mediadevices.MediaStream {
-	stream, err := mediadevices.GetUserMedia(
-		mediadevices.MediaStreamConstraints{
-			Video: func(c *mediadevices.MediaTrackConstraints) {
-				c.FrameFormat = prop.FrameFormat(frame.FormatI420)
-				c.Width = prop.Int(640)
-				c.Height = prop.Int(480)
-			},
-			Audio: func(c *mediadevices.MediaTrackConstraints) {},
-			Codec: codecSelector(),
-		},
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	return stream
+func (l *LiveChat) GetWindows() ([]WindowData, error) {
+	return GetWindows()
 }
 
-func ffmpegMicCapture() (io.ReadCloser, error) {
-	cmd := exec.Command(
-		"ffmpeg",
-		"-f",
-		"pulse",
-		"-i",
-		"default",
-		"-c:a",
-		"libopus",
-		"-b:a",
-		"64k",
-		"-vbr",
-		"on",
-		"-f",
-		"opus",
-		"pipe:1",
-	)
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
+func (l *LiveChat) Thumbnail(w WindowData) ([]byte, error) {
+	return w.Thumbnail()
+}
+
+func (l *LiveChat) UnpublishScreenShare() {
+	if l.screen == nil {
+		return
 	}
 
-	err = cmd.Start()
-	if err != nil {
-		return nil, err
+	sid := l.screen.SID()
+	if sid != "" {
+		l.room.LocalParticipant.UnpublishTrack(sid)
+	}
+	_ = l.screen.Close()
+	l.screen = nil
+}
+
+func (l *LiveChat) PublishScreenShare(ID uint32) error {
+	if !l.Connected() {
+		return fmt.Errorf("cannot publish screen: not connected to a room")
 	}
 
-	go func() {
-		cmd.Wait()
+	if l.screen != nil {
+		return fmt.Errorf("cannot publish screen: screen already on")
+	}
+
+	windows, _ := GetWindows()
+	var w *WindowData
+	for _, win := range windows {
+		if win.ID == ID {
+			w = &win
+			break
+		}
+	}
+
+	if w == nil {
+		return fmt.Errorf("invalid window ID")
+	}
+
+	screenShare, err := NewScreenShare(w)
+	if err != nil {
+		return err
+	}
+
+	err = screenShare.Start()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err == nil {
+			return
+		}
+		log.Println("failed to publish screenshare, cleaning up screenshare stream")
+		_ = screenShare.Close()
 	}()
 
-	return stdout, err
+	err = PublishScreenShare(l.room, screenShare)
+	if err != nil {
+		return err
+	}
+
+	l.screen = screenShare
+
+	return nil
 }

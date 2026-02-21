@@ -5,6 +5,10 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 export function Connect(channelName: string): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.Connect", channelName);
 }
@@ -17,10 +21,46 @@ export function Disconnect(): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.Disconnect");
 }
 
+export function GetWindows(): $CancellablePromise<$models.WindowData[]> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.GetWindows").then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
 export function PublishMicrophone(): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.PublishMicrophone");
+}
+
+export function PublishScreenShare(ID: number): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.PublishScreenShare", ID);
 }
 
 export function PublishWebcam(): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.PublishWebcam");
 }
+
+export function SetMicMuted(muted: boolean): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.SetMicMuted", muted);
+}
+
+export function Thumbnail(w: $models.WindowData): $CancellablePromise<string> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.Thumbnail", w).then(($result: any) => {
+        return $Create.ByteSlice($result);
+    });
+}
+
+export function UnpublishMic(): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishMic");
+}
+
+export function UnpublishScreenShare(): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishScreenShare");
+}
+
+export function UnpublishWebcam(): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishWebcam");
+}
+
+// Private type creation functions
+const $$createType0 = $models.WindowData.createFrom;
+const $$createType1 = $Create.Array($$createType0);

@@ -4,6 +4,10 @@ import {
   Connect,
   Disconnect,
   PublishMicrophone,
+  PublishWebcam,
+  UnpublishWebcam,
+  GetWindows,
+  PublishScreenShare,
 } from "@/bindings/IrChad/internal/live/livechat";
 
 const playConnectionChime = () => {
@@ -69,9 +73,7 @@ export async function disconnect() {
   const store = useLiveStore();
   await Disconnect();
 
-  store.setConnected("");
-  store.participants.clear();
-  store.channels.clear();
+  store.reset();
 }
 
 export async function publishMic() {
@@ -79,4 +81,29 @@ export async function publishMic() {
   const rv = await PublishMicrophone();
   console.log(rv);
   store.micEnabled = true;
+}
+
+export async function publishCamera() {
+  console.log("publishCamera");
+  const store = useLiveStore();
+  const rv = await PublishWebcam();
+  console.log(rv);
+  store.camEnabled = true;
+}
+
+export async function unpublishCamera() {
+  const store = useLiveStore();
+  const rv = await UnpublishWebcam();
+  console.log("cam disabled: ", rv);
+  store.camEnabled = false;
+}
+
+export async function getWindows() {
+  return await GetWindows();
+}
+
+export async function shareWindow(id: number) {
+  const rv = await PublishScreenShare(id);
+  console.log(rv);
+  console.log("screen sharing activated");
 }

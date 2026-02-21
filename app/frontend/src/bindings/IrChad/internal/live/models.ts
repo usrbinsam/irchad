@@ -95,3 +95,44 @@ export class ParticipantTrackPublished {
         return new ParticipantTrackPublished($$parsedSource as Partial<ParticipantTrackPublished>);
     }
 }
+
+export class WindowData {
+    "ID": number;
+    "Title": string;
+    "X": number;
+    "Y": number;
+    "W": number;
+    "H": number;
+
+    /** Creates a new WindowData instance. */
+    constructor($$source: Partial<WindowData> = {}) {
+        if (!("ID" in $$source)) {
+            this["ID"] = 0;
+        }
+        if (!("Title" in $$source)) {
+            this["Title"] = "";
+        }
+        if (!("X" in $$source)) {
+            this["X"] = 0;
+        }
+        if (!("Y" in $$source)) {
+            this["Y"] = 0;
+        }
+        if (!("W" in $$source)) {
+            this["W"] = 0;
+        }
+        if (!("H" in $$source)) {
+            this["H"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new WindowData instance from a string or object.
+     */
+    static createFrom($$source: any = {}): WindowData {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new WindowData($$parsedSource as Partial<WindowData>);
+    }
+}

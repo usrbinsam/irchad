@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useLiveStore } from "@/stores/liveStore";
 const liveStore = useLiveStore();
+const { screenShareDialog } = storeToRefs(liveStore);
 </script>
 
 <template>
@@ -11,4 +12,7 @@ const liveStore = useLiveStore();
       :participant="participant"
     />
   </div>
+  <v-dialog v-model="screenShareDialog" persistent>
+    <ScreenShare />
+  </v-dialog>
 </template>

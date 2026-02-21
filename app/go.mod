@@ -5,7 +5,6 @@ go 1.25.0
 require (
 	github.com/livekit/protocol v1.44.1-0.20260120134243-0914cc74653e
 	github.com/livekit/server-sdk-go/v2 v2.13.3
-	github.com/pion/mediadevices v0.9.4
 	github.com/pion/webrtc/v4 v4.2.6
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.72
 )
@@ -100,7 +99,6 @@ require (
 	go.uber.org/zap/exp v0.3.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a // indirect
-	golang.org/x/image v0.36.0 // indirect
 	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect

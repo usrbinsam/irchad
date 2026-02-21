@@ -6,6 +6,10 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 /**
  * @param {string} channelName
  * @returns {$CancellablePromise<void>}
@@ -29,10 +33,27 @@ export function Disconnect() {
 }
 
 /**
+ * @returns {$CancellablePromise<$models.WindowData[]>}
+ */
+export function GetWindows() {
+    return $Call.ByID(4015795614).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType1($result);
+    }));
+}
+
+/**
  * @returns {$CancellablePromise<void>}
  */
 export function PublishMicrophone() {
     return $Call.ByID(762739442);
+}
+
+/**
+ * @param {number} ID
+ * @returns {$CancellablePromise<void>}
+ */
+export function PublishScreenShare(ID) {
+    return $Call.ByID(2179788497, ID);
 }
 
 /**
@@ -41,3 +62,46 @@ export function PublishMicrophone() {
 export function PublishWebcam() {
     return $Call.ByID(2617723007);
 }
+
+/**
+ * @param {boolean} muted
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetMicMuted(muted) {
+    return $Call.ByID(1982595911, muted);
+}
+
+/**
+ * @param {$models.WindowData} w
+ * @returns {$CancellablePromise<string>}
+ */
+export function Thumbnail(w) {
+    return $Call.ByID(1514289829, w).then(/** @type {($result: any) => any} */(($result) => {
+        return $Create.ByteSlice($result);
+    }));
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function UnpublishMic() {
+    return $Call.ByID(3708034566);
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function UnpublishScreenShare() {
+    return $Call.ByID(2171747118);
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function UnpublishWebcam() {
+    return $Call.ByID(1463901962);
+}
+
+// Private type creation functions
+const $$createType0 = $models.WindowData.createFrom;
+const $$createType1 = $Create.Array($$createType0);
