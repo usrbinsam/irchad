@@ -3,7 +3,9 @@ package live
 import (
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
+	"syscall"
 	"time"
 
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -40,16 +42,40 @@ func (p *StreamedProcess) Read(b []byte) (int, error) {
 }
 
 func (p *StreamedProcess) Stop() error {
-	err := p.cmd.Process.Kill()
-	if err != nil {
-		return err
+	if p.cmd == nil || p.cmd.Process == nil {
+		return nil
 	}
 
-	return p.cmd.Wait()
+	// Try graceful termination first
+	_ = p.cmd.Process.Signal(syscall.SIGTERM)
+
+	// Wait for process to exit or kill it after a timeout
+	done := make(chan error, 1)
+	go func() {
+		done <- p.cmd.Wait()
+	}()
+
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(500 * time.Millisecond):
+		log.Printf("ffmpeg did not exit after SIGTERM, killing")
+		err := p.cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
+		return <-done
+	}
 }
 
 func (p *StreamedProcess) Close() error {
-	_ = p.Stdout.Close()
+	log.Printf("StreamedProcess closing: %+v", p)
+	if p.Stdout != nil {
+		err := p.Stdout.Close()
+		if err != nil {
+			log.Printf("error closing stdout: %s", err.Error())
+		}
+	}
 	return p.Stop()
 }
 

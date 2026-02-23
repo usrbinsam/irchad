@@ -3,10 +3,12 @@ package live
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"time"
 
 	"github.com/livekit/protocol/auth"
+	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -28,7 +30,7 @@ type LiveChat struct {
 
 	microphone *StreamedProcess
 	camera     *StreamedProcess
-	screen     *StreamedProcess
+	screen     io.ReadCloser
 }
 
 func (l *LiveChat) getToken(identity, room string) (string, error) {
@@ -37,6 +39,8 @@ func (l *LiveChat) getToken(identity, room string) (string, error) {
 		RoomJoin: true,
 		Room:     room,
 	}
+	videoGrant.SetCanPublish(true)
+	videoGrant.SetCanSubscribe(true)
 
 	sipGrant := &auth.SIPGrant{
 		Admin: false,
@@ -54,6 +58,7 @@ func (l *LiveChat) onParticipantConnected(rp *lksdk.RemoteParticipant) {
 		ParticipantConnected{Identity: rp.Identity(), Channel: l.room.Name()},
 	)
 
+	log.Printf("%s joined the call\n", rp.Identity())
 	log.Printf("available tracks:\n")
 	for _, pub := range rp.TrackPublications() {
 		log.Printf("%+v\n", pub)
@@ -71,7 +76,7 @@ func (l *LiveChat) onParticipantDisconnected(rp *lksdk.RemoteParticipant) {
 	)
 }
 
-func (l *LiveChat) Connect(channelName string) error {
+func (l *LiveChat) Connect(nick string, channelName string) error {
 	log.Printf("connecting to %s on %s", channelName, l.url)
 
 	cb := &lksdk.RoomCallback{
@@ -82,7 +87,7 @@ func (l *LiveChat) Connect(channelName string) error {
 		},
 	}
 
-	token, err := l.getToken("chad", channelName)
+	token, err := l.getToken(nick, channelName)
 	if err != nil {
 		log.Fatalf("error getting join token: %s", err.Error())
 	}
@@ -91,6 +96,7 @@ func (l *LiveChat) Connect(channelName string) error {
 		l.url,
 		token,
 		cb,
+		lksdk.WithAutoSubscribe(true),
 	)
 	if err != nil {
 		log.Printf("failed to connect to channel: %s", err.Error())
@@ -109,6 +115,13 @@ func (l *LiveChat) Connect(channelName string) error {
 				Identity: rp.Identity(),
 			},
 		)
+
+		for _, pub := range rp.TrackPublications() {
+			if remotePub, ok := pub.(*lksdk.RemoteTrackPublication); ok {
+				if track := remotePub.Track(); track != nil {
+				}
+			}
+		}
 	}
 
 	return nil
@@ -292,16 +305,26 @@ func (l *LiveChat) Thumbnail(w WindowData) ([]byte, error) {
 }
 
 func (l *LiveChat) UnpublishScreenShare() {
+	log.Printf("Unpublish screen share requested")
 	if l.screen == nil {
 		return
 	}
 
-	sid := l.screen.SID()
-	if sid != "" {
-		l.room.LocalParticipant.UnpublishTrack(sid)
-	}
-	_ = l.screen.Close()
+	l.screen.Close()
 	l.screen = nil
+
+	// sid := l.screen.SID()
+	// if sid != "" {
+	// 	log.Printf("Unpublishing track")
+	// 	err := l.room.LocalParticipant.UnpublishTrack(sid)
+	// 	if err != nil {
+	// 		log.Printf("failed to unpublish screenshare track: %s", err.Error())
+	// 	}
+	// }
+	// log.Printf("shutting down ffmpeg")
+	// _ = l.screen.Close()
+	// l.screen = nil
+	application.Get().Event.Emit(EventScreenShareClosed)
 }
 
 func (l *LiveChat) PublishScreenShare(ID uint32) error {
@@ -326,13 +349,22 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 		return fmt.Errorf("invalid window ID")
 	}
 
-	screenShare, err := NewScreenShare(w)
+	track, err := lksdk.NewLocalSampleTrack(
+		webrtc.RTPCodecCapability{
+			MimeType: webrtc.MimeTypeH264,
+		},
+	)
+
+	log.Printf("starting screen share for: %+v", w)
+	screenShare, err := NewGstScreenShare(w, track)
 	if err != nil {
+		fmt.Errorf("GStreamer error: %s", err.Error())
 		return err
 	}
 
 	err = screenShare.Start()
 	if err != nil {
+		log.Printf("GStreamer failed to start: %s", err.Error())
 		return err
 	}
 
@@ -344,15 +376,29 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 		_ = screenShare.Close()
 	}()
 
-	err = PublishScreenShare(l.room, screenShare, func() {
-		// screenShare.Close()
-		application.Get().Event.Emit(EventScreenShareClosed)
-	})
+	// track, err := lksdk.NewLocalReaderTrack(
+	// 	screenShare,
+	// 	webrtc.MimeTypeH264,
+	// 	lksdk.ReaderTrackWithFrameDuration(33*time.Millisecond),
+	// )
 	if err != nil {
 		return err
 	}
 
-	l.screen = screenShare
+	_, err = l.room.LocalParticipant.PublishTrack(
+		track,
+		&lksdk.TrackPublicationOptions{
+			Name:   w.Title,
+			Source: livekit.TrackSource_SCREEN_SHARE,
+		},
+	)
+	if err != nil {
+		log.Printf("failed to publish screen share track: %s", err.Error())
+		return fmt.Errorf("failed to publish track: %w", err)
+	}
 
+	// p.publication = pub
+
+	l.screen = screenShare
 	return nil
 }

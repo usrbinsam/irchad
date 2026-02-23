@@ -2,6 +2,7 @@ package live
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -43,9 +44,20 @@ func (d *httpServer) Addr() string {
 	return d.listener.Addr().String()
 }
 
+func (l *LiveChat) showStreams(w http.ResponseWriter, r *http.Request) {
+	for participant, v := range l.registry.streams {
+		fmt.Fprintf(w, "--- Participant: %s ---\n", participant)
+
+		for trackID := range v {
+			fmt.Fprintf(w, "  Track: %s\n", trackID)
+		}
+	}
+}
+
 func (l *LiveChat) startDecodeServer() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/stream", l.serveStream)
+	mux.HandleFunc("/", l.showStreams)
 	l.decoderServer = newHTTPServer(mux)
 	err := l.decoderServer.Start()
 	if err != nil {

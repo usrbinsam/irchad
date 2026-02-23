@@ -11,11 +11,12 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * @param {string} nick
  * @param {string} channelName
  * @returns {$CancellablePromise<void>}
  */
-export function Connect(channelName) {
-    return $Call.ByID(1257987059, channelName);
+export function Connect(nick, channelName) {
+    return $Call.ByID(1257987059, nick, channelName);
 }
 
 /**

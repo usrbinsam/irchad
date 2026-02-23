@@ -9,8 +9,8 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function Connect(channelName: string): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.Connect", channelName);
+export function Connect(nick: string, channelName: string): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.Connect", nick, channelName);
 }
 
 export function Connected(): $CancellablePromise<boolean> {

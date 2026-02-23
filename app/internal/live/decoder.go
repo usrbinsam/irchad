@@ -2,6 +2,7 @@ package live
 
 import (
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -36,8 +37,10 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 	cmd := exec.Command(
 		"ffmpeg",
 		"-f", format,
-		"-analyzeduration", "5000000",
-		"-probesize", "32000000",
+		"-analyzeduration", "0",
+		"-probesize", "32",
+		"-fflags", "nobuffer",
+		"-flags", "low_delay",
 		"-i", "pipe:0",
 		"-c:v", "mjpeg",
 		"-q:v", "5",
@@ -45,6 +48,7 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 		"-boundary_tag", "irchad",
 		"pipe:1",
 	)
+	cmd.Stderr = os.Stderr
 
 	mediaPipeOut, err := cmd.StdinPipe()
 	if err != nil {
@@ -95,7 +99,6 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 		for {
 			packet, _, err := track.ReadRTP()
 			if err != nil {
-				log.Printf("track.ReadRTP error: %s", err.Error())
 				break
 			}
 

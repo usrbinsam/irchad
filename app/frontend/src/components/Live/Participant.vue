@@ -15,6 +15,5 @@ const audioTracks: ComputedRef<string[]> = computed(() => {
     <div style="display: none">
       <audio v-for="url in audioTracks" :src="url" autoplay></audio>
     </div>
-    <ParticipantVideo v-bind="props" />
   </div>
 </template>

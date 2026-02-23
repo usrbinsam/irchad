@@ -141,18 +141,18 @@ export const useIRCStore = defineStore("ircStore", () => {
 
   const client = markRaw(new Client());
 
-  function connect() {
+  function connect(host: string, port: number, path: string) {
     client.requestCap("draft/metadata-2");
     client.requestCap("echo-message");
     client.requestCap("chathistory");
     client.requestCap("draft/multiline");
     const tls = location.protocol === "https:";
     const connectParams = {
-      host: location.hostname,
-      port: location.port,
+      host,
+      port,
       tls,
       version: "irchad on irc-framework",
-      path: "/ws",
+      path,
       account: accountStore.account.account
         ? {
             account: accountStore.account.account,

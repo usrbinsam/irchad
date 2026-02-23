@@ -10,6 +10,7 @@ import {
   PublishScreenShare,
   UnpublishScreenShare,
 } from "@/bindings/IrChad/internal/live/livechat";
+import { useAccountStore } from "@/stores/accountStore";
 
 const playConnectionChime = () => {
   // Initialize the browser's native audio engine
@@ -69,7 +70,9 @@ export function setupEvents() {
 }
 
 export async function connect(channel: string) {
-  await Connect(channel);
+  const accountStore = useAccountStore();
+
+  await Connect(accountStore.account.nick, channel);
   playConnectionChime();
   useLiveStore().setConnected(channel);
 }

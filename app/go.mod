@@ -6,6 +6,7 @@ require (
 	github.com/livekit/protocol v1.44.1-0.20260120134243-0914cc74653e
 	github.com/livekit/server-sdk-go/v2 v2.13.3
 	github.com/pion/webrtc/v4 v4.2.9
+	github.com/tinyzimmer/go-gst v0.2.33
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.72
 )
 
@@ -60,6 +61,7 @@ require (
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/nats-io/nats.go v1.48.0 // indirect
 	github.com/nats-io/nkeys v0.4.15 // indirect
@@ -87,6 +89,7 @@ require (
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
+	github.com/tinyzimmer/go-glib v0.0.25 // indirect
 	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
 	github.com/wailsapp/go-webview2 v1.0.23 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect

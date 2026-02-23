@@ -15,6 +15,11 @@ const connecting = ref(false);
 
 const router = useRouter();
 const nickInUse = ref(false);
+const server = ref({
+  host: "127.0.0.1",
+  port: 8097,
+  path: "/",
+});
 
 onBeforeMount(() => {
   ircStore.client.on("nick in use", () => {
@@ -24,7 +29,8 @@ onBeforeMount(() => {
   });
 });
 function login() {
-  ircStore.connect();
+  const s = server.value;
+  ircStore.connect(s.host, s.port, s.path);
   connecting.value = true;
   router.push({ name: "Chat" });
 }
@@ -43,7 +49,11 @@ function required(v: any) {
             v-model="account.nick"
             label="Nickname"
             :rules="[required]"
+            autofocus
           />
+          <v-text-field v-model="server.host" label="Server Host" />
+          <v-text-field v-model="server.port" label="Port" type="number" />
+          <v-text-field v-model="server.path" label="Path" />
           <v-text-field
             v-if="withAccount"
             v-model="account.account"
