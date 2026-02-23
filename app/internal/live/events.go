@@ -28,9 +28,11 @@ type ParticipantTrackPublished struct {
 	Show         bool
 }
 
+type ScreenShareClosed struct{}
+
 func RegisterEvents() {
 	application.RegisterEvent[ParticipantConnected](EventParticipantConnected)
 	application.RegisterEvent[ParticipantDisconnected](EventParticipantDisconnected)
 	application.RegisterEvent[ParticipantTrackPublished](EventParticipantTrackPublished)
-	application.RegisterEvent[any](EventScreenShareClosed)
+	application.RegisterEvent[ScreenShareClosed](EventScreenShareClosed)
 }
