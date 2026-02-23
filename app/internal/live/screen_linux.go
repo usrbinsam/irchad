@@ -10,10 +10,9 @@ typedef struct {
     unsigned long id;
     int x, y;
     unsigned int width, height;
-    char* title; // Holds raw Xlib pointer, Go is responsible for calling XFree
+    char* title;
 } WinInfo;
 
-// Cache atoms statically to avoid X11 server round-trips in loops
 static Atom atom_client_list = None;
 static Atom atom_wm_name = None;
 static Atom atom_utf8 = None;
@@ -26,7 +25,6 @@ void init_atoms(Display* disp) {
     }
 }
 
-// Helper to get the window list from the Root Window
 Window* get_window_list(Display* disp, unsigned long* len) {
     init_atoms(disp);
     Atom actual_type;
@@ -42,13 +40,11 @@ Window* get_window_list(Display* disp, unsigned long* len) {
     return NULL;
 }
 
-// Helper to get title and geometry for a specific window
 WinInfo get_win_info(Display* disp, Window win) {
     init_atoms(disp);
     WinInfo info = {0};
     info.id = (unsigned long)win;
 
-    // 1. Get Title (UTF-8)
     Atom type;
     int format;
     unsigned long nitems, after;
@@ -61,12 +57,10 @@ WinInfo get_win_info(Display* disp, Window win) {
         info.title = NULL;
     }
 
-    // 2. Get Geometry & Translate to Absolute Coordinates
     Window root, child;
     unsigned int border, depth;
     int local_x, local_y;
 
-    // Check return value (returns 0 on failure, e.g., if window just closed)
     if (XGetGeometry(disp, win, &root, &local_x, &local_y, &info.width, &info.height, &border, &depth) != 0) {
         XTranslateCoordinates(disp, win, root, 0, 0, &info.x, &info.y, &child);
     }
