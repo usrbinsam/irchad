@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=gtktest
-Exec=gtktest
-Icon=gtktest
+Name=IrChad
+Exec=IrChad
+Icon=IrChad
 Categories=Development;
 Terminal=false
 Keywords=wails

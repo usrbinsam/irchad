@@ -3,26 +3,26 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "gtktest"
+name: "IrChad"
 arch: ${GOARCH}
 platform: "linux"
 version: "0.1.0"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A gtktest application"
+description: "A IrChad application"
 vendor: "My Company"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/gtktest"
-    dst: "/usr/local/bin/gtktest"
+  - src: "./bin/IrChad"
+    dst: "/usr/local/bin/IrChad"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/gtktest.png"
-  - src: "./build/linux/gtktest.desktop"
-    dst: "/usr/share/applications/gtktest.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/IrChad.png"
+  - src: "./build/linux/IrChad.desktop"
+    dst: "/usr/share/applications/IrChad.desktop"
 
 # Default dependencies for Debian 12/Ubuntu 22.04+ with WebKit 4.1
 depends:
@@ -36,8 +36,8 @@ overrides:
     depends:
       - gtk3
       - webkit2gtk4.1
-  
-  # Arch Linux packages (WebKit 4.1)  
+
+  # Arch Linux packages (WebKit 4.1)
   archlinux:
     depends:
       - gtk3

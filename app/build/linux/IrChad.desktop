@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=irchad
+Exec=IrChad
+Icon=IrChad
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false
