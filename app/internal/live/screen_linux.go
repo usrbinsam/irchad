@@ -85,6 +85,7 @@ import (
 	"github.com/tinyzimmer/go-gst/gst/app"
 )
 
+// this and the CGO was made by Google Gemini
 func GetWindows() ([]WindowData, error) {
 	display := C.XOpenDisplay(nil)
 	if display == nil {
