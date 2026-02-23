@@ -52,7 +52,7 @@ WinInfo get_win_info(Display* disp, Window win) {
 
     if (XGetWindowProperty(disp, win, atom_wm_name, 0, 1024, False, atom_utf8,
                            &type, &format, &nitems, &after, &title_data) == Success && title_data) {
-        info.title = (char*)title_data; // Pass directly to Go to avoid strdup
+        info.title = (char*)title_data;
     } else {
         info.title = NULL;
     }
