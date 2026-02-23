@@ -139,6 +139,27 @@ export class ParticipantTrackPublished {
     }
 }
 
+export class ScreenShareClosed {
+    /**
+     * Creates a new ScreenShareClosed instance.
+     * @param {Partial<ScreenShareClosed>} [$$source = {}] - The source object to create the ScreenShareClosed.
+     */
+    constructor($$source = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ScreenShareClosed instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {ScreenShareClosed}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ScreenShareClosed(/** @type {Partial<ScreenShareClosed>} */($$parsedSource));
+    }
+}
+
 export class WindowData {
     /**
      * Creates a new WindowData instance.

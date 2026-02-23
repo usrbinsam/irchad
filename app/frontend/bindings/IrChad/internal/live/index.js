@@ -11,5 +11,6 @@ export {
     ParticipantConnected,
     ParticipantDisconnected,
     ParticipantTrackPublished,
+    ScreenShareClosed,
     WindowData
 } from "./models.js";
