@@ -85,8 +85,8 @@ export function Thumbnail(w) {
 /**
  * @returns {$CancellablePromise<void>}
  */
-export function UnpublishMic() {
-    return $Call.ByID(3708034566);
+export function UnpublishMicrophone() {
+    return $Call.ByID(937473251);
 }
 
 /**

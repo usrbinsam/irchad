@@ -28,9 +28,11 @@ type LiveChat struct {
 	registry      *StreamRegistry
 	decoderServer *httpServer // provides decoded video/audio streams when connected to a room
 
-	microphone *StreamedProcess
-	camera     *StreamedProcess
-	screen     io.ReadCloser
+	microphone    io.Closer
+	microphonePub *lksdk.LocalTrackPublication
+	camera        *StreamedProcess
+	screen        io.Closer
+	screenPub     *lksdk.LocalTrackPublication
 }
 
 func (l *LiveChat) getToken(identity, room string) (string, error) {
@@ -135,7 +137,9 @@ func (l *LiveChat) Disconnect(ctx context.Context) {
 		l.decoderServer = nil
 	}
 
-	l.UnpublishMic()
+	l.UnpublishMicrophone()
+	l.UnpublishScreenShare()
+	l.UnpublishWebcam()
 
 	if l.room != nil {
 		l.room.Disconnect()
@@ -160,44 +164,47 @@ func (l *LiveChat) PublishMicrophone() error {
 		return fmt.Errorf("cannot publish mic: mic already on")
 	}
 
-	microphone, err := NewMicrophone()
+	track, err := lksdk.NewLocalSampleTrack(
+		webrtc.RTPCodecCapability{
+			MimeType: webrtc.MimeTypeOpus,
+		},
+	)
+	microphone, err := NewMicrophone(track)
 	if err != nil {
 		return err
 	}
 
-	err = microphone.Start()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err == nil {
-			return
-		}
-		log.Println("failed to publish microphone, cleaning up mic stream")
-		_ = microphone.Close()
-	}()
-
-	err = PublishMicrophone(l.room, microphone)
-	if err != nil {
-		return err
-	}
+	pub, err := l.room.LocalParticipant.PublishTrack(
+		track,
+		&lksdk.TrackPublicationOptions{
+			Name:   "mic",
+			Source: livekit.TrackSource_MICROPHONE,
+		},
+	)
 
 	l.microphone = microphone
+	l.microphonePub = pub
 
 	return nil
 }
 
-func (l *LiveChat) UnpublishMic() {
+func (l *LiveChat) UnpublishMicrophone() {
 	if l.microphone == nil {
 		return
 	}
 
-	sid := l.microphone.SID()
-	if sid != "" {
-		l.room.LocalParticipant.UnpublishTrack(sid)
+	err := l.microphone.Close()
+	if err != nil {
+		log.Printf("failed to stop microphone: %s\n", err.Error())
+		return
 	}
-	_ = l.microphone.Close()
+
+	err = l.room.LocalParticipant.UnpublishTrack(l.microphonePub.SID())
+	if err != nil {
+		log.Printf("failed to unpublish microphone track: %s\n", err.Error)
+		return
+	}
+
 	l.microphone = nil
 }
 
@@ -247,12 +254,11 @@ func (l *LiveChat) PublishWebcam() error {
 	}
 
 	l.camera = cam
-
 	return nil
 }
 
 func (l *LiveChat) SetMicMuted(muted bool) {
-	l.microphone.SetMuted(muted)
+	l.microphonePub.SetMuted(muted)
 }
 
 func (l *LiveChat) onTrackSubscribed(
@@ -309,21 +315,17 @@ func (l *LiveChat) UnpublishScreenShare() {
 	if l.screen == nil {
 		return
 	}
-
-	l.screen.Close()
+	err := l.screen.Close()
+	if err != nil {
+		log.Printf("failed to stop screen share: %s", err.Error())
+		return
+	}
 	l.screen = nil
-
-	// sid := l.screen.SID()
-	// if sid != "" {
-	// 	log.Printf("Unpublishing track")
-	// 	err := l.room.LocalParticipant.UnpublishTrack(sid)
-	// 	if err != nil {
-	// 		log.Printf("failed to unpublish screenshare track: %s", err.Error())
-	// 	}
-	// }
-	// log.Printf("shutting down ffmpeg")
-	// _ = l.screen.Close()
-	// l.screen = nil
+	err = l.room.LocalParticipant.UnpublishTrack(l.screenPub.SID())
+	if err != nil {
+		log.Printf("failed to unpublish screen share track: %s", err.Error())
+		return
+	}
 	application.Get().Event.Emit(EventScreenShareClosed)
 }
 
@@ -356,32 +358,9 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 	)
 
 	log.Printf("starting screen share for: %+v", w)
-	screenShare, err := NewGstScreenShare(w, track)
+	screenShare, err := NewScreenShare(w, track)
 	if err != nil {
 		fmt.Errorf("GStreamer error: %s", err.Error())
-		return err
-	}
-
-	err = screenShare.Start()
-	if err != nil {
-		log.Printf("GStreamer failed to start: %s", err.Error())
-		return err
-	}
-
-	defer func() {
-		if err == nil {
-			return
-		}
-		log.Println("failed to publish screenshare, cleaning up screenshare stream")
-		_ = screenShare.Close()
-	}()
-
-	// track, err := lksdk.NewLocalReaderTrack(
-	// 	screenShare,
-	// 	webrtc.MimeTypeH264,
-	// 	lksdk.ReaderTrackWithFrameDuration(33*time.Millisecond),
-	// )
-	if err != nil {
 		return err
 	}
 
@@ -396,8 +375,6 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 		log.Printf("failed to publish screen share track: %s", err.Error())
 		return fmt.Errorf("failed to publish track: %w", err)
 	}
-
-	// p.publication = pub
 
 	l.screen = screenShare
 	return nil
