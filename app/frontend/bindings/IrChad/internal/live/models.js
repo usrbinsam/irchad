@@ -124,6 +124,13 @@ export class ParticipantTrackPublished {
              */
             this["Show"] = false;
         }
+        if (!("TrackName" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["TrackName"] = "";
+        }
 
         Object.assign(this, $$source);
     }

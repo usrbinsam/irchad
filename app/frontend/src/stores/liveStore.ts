@@ -11,6 +11,7 @@ export interface Track {
   source: string;
   subscribeURL: string;
   show: boolean;
+  trackName: string;
 }
 
 export interface Channel {

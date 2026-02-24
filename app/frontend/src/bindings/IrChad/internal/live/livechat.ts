@@ -49,8 +49,8 @@ export function Thumbnail(w: $models.WindowData): $CancellablePromise<string> {
     });
 }
 
-export function UnpublishMic(): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishMic");
+export function UnpublishMicrophone(): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishMicrophone");
 }
 
 export function UnpublishScreenShare(): $CancellablePromise<void> {

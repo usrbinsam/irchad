@@ -52,6 +52,7 @@ export function setupEvents() {
       source: data.Source,
       subscribeURL: data.SubscribeURL,
       show: data.Show,
+      trackName: data.TrackName,
     });
     console.log("new track " + data.Kind + " : ", data);
   });

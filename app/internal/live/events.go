@@ -26,6 +26,7 @@ type ParticipantTrackPublished struct {
 	Source       string
 	Kind         string
 	Show         bool
+	TrackName    string
 }
 
 type ScreenShareClosed struct{}

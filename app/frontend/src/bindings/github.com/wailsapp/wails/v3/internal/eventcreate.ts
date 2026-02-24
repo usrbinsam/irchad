@@ -15,6 +15,7 @@ function configure() {
         "live:participant-connected": $$createType0,
         "live:participant-dissconnected": $$createType1,
         "live:participant-track-published": $$createType2,
+        "live:screen-share-closed": $$createType3,
     }));
 }
 
@@ -22,5 +23,6 @@ function configure() {
 const $$createType0 = live$0.ParticipantConnected.createFrom;
 const $$createType1 = live$0.ParticipantDisconnected.createFrom;
 const $$createType2 = live$0.ParticipantTrackPublished.createFrom;
+const $$createType3 = live$0.ScreenShareClosed.createFrom;
 
 configure();

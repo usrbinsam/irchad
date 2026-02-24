@@ -62,6 +62,7 @@ export class ParticipantTrackPublished {
     "Source": string;
     "Kind": string;
     "Show": boolean;
+    "TrackName": string;
 
     /** Creates a new ParticipantTrackPublished instance. */
     constructor($$source: Partial<ParticipantTrackPublished> = {}) {
@@ -83,6 +84,9 @@ export class ParticipantTrackPublished {
         if (!("Show" in $$source)) {
             this["Show"] = false;
         }
+        if (!("TrackName" in $$source)) {
+            this["TrackName"] = "";
+        }
 
         Object.assign(this, $$source);
     }
@@ -93,6 +97,23 @@ export class ParticipantTrackPublished {
     static createFrom($$source: any = {}): ParticipantTrackPublished {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new ParticipantTrackPublished($$parsedSource as Partial<ParticipantTrackPublished>);
+    }
+}
+
+export class ScreenShareClosed {
+
+    /** Creates a new ScreenShareClosed instance. */
+    constructor($$source: Partial<ScreenShareClosed> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ScreenShareClosed instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ScreenShareClosed {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ScreenShareClosed($$parsedSource as Partial<ScreenShareClosed>);
     }
 }
 

@@ -303,10 +303,11 @@ func (l *LiveChat) onTrackSubscribed(
 	}
 
 	ev := ParticipantTrackPublished{
-		Identity: identity,
-		TrackID:  trackID,
-		Source:   publication.Source().String(),
-		Kind:     track.Kind().String(),
+		Identity:  identity,
+		TrackID:   trackID,
+		Source:    publication.Source().String(),
+		Kind:      track.Kind().String(),
+		TrackName: publication.Name(),
 		SubscribeURL: fmt.Sprintf(
 			"http://%s/stream?pid=%s&tid=%s",
 			l.decoderServer.Addr(),
