@@ -35,14 +35,14 @@ export default defineConfig({
         configFile: "src/styles/settings.scss",
       },
     }),
-    nodePolyfills({
-      globals: {
-        Buffer: true,
-        global: true,
-        process: true,
-      },
-      protocolImports: true,
-    }),
+    // nodePolyfills({
+    //   globals: {
+    //     Buffer: true,
+    //     global: true,
+    //     process: true,
+    //   },
+    //   protocolImports: true,
+    // }),
     wails("src/bindings"),
   ],
   optimizeDeps: {
