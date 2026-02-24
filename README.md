@@ -49,7 +49,7 @@ You will need:
 - [Docker](https://docs.docker.com/get-started/get-docker/) (or something to run
   containers)
 - [Task](https://taskfile.dev/)
-- [https://gstreamer.freedesktop.org/](https://gstreamer.freedesktop.org/)
+- [GStreamer](https://gstreamer.freedesktop.org/)
 
 1. Rename `ircd.test.yaml` -> `ircd.yaml`
 2. Start Ergo and LiveKit Server with `docker compose up -d`
