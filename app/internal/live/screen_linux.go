@@ -108,9 +108,9 @@ func GetWindows() ([]WindowData, error) {
 			C.XFree(unsafe.Pointer(info.title))
 		}
 
-		if info.x < 0 || info.y < 0 {
-			continue
-		}
+		// if info.x < 0 || info.y < 0 {
+		// 	continue
+		// }
 
 		if title == "" {
 			title = "(unnamed)"
@@ -164,7 +164,7 @@ func NewGstScreenShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter,
 			"videoconvert ! "+
 			"videoscale ! "+
 			"video/x-raw,format=I420,framerate=30/1,width=%d,height=%d ! "+
-			"x264enc tune=zerolatency speed-preset=ultrafast key-int-max=30 ! "+
+			"x264enc tune=zerolatency speed-preset=veryfast key-int-max=30 bitrate=8000 ! "+
 			"h264parse config-interval=-1 ! "+
 			"video/x-h264,stream-format=byte-stream,alignment=au ! "+ // FORCE ANNEX-B
 			"appsink name=sink sync=false emit-signals=true drop=true max-buffers=1",
