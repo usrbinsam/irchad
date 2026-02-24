@@ -30,7 +30,8 @@ type LiveChat struct {
 
 	microphone    io.Closer
 	microphonePub *lksdk.LocalTrackPublication
-	camera        *StreamedProcess
+	camera        io.Closer
+	cameraPub     *lksdk.LocalTrackPublication
 	screen        io.Closer
 	screenPub     *lksdk.LocalTrackPublication
 }
@@ -169,8 +170,14 @@ func (l *LiveChat) PublishMicrophone() error {
 			MimeType: webrtc.MimeTypeOpus,
 		},
 	)
+	if err != nil {
+		log.Printf("error creating microphone track: %s\n", err.Error())
+		return err
+	}
+
 	microphone, err := NewMicrophone(track)
 	if err != nil {
+		log.Printf("error getting microphone stream: %s\n", err.Error())
 		return err
 	}
 
@@ -181,6 +188,11 @@ func (l *LiveChat) PublishMicrophone() error {
 			Source: livekit.TrackSource_MICROPHONE,
 		},
 	)
+	if err != nil {
+		log.Printf("error publishing microphone track: %s\n", err.Error())
+		_ = microphone.Close()
+		return err
+	}
 
 	l.microphone = microphone
 	l.microphonePub = pub
@@ -201,7 +213,7 @@ func (l *LiveChat) UnpublishMicrophone() {
 
 	err = l.room.LocalParticipant.UnpublishTrack(l.microphonePub.SID())
 	if err != nil {
-		log.Printf("failed to unpublish microphone track: %s\n", err.Error)
+		log.Printf("failed to unpublish microphone track: %s\n", err.Error())
 		return
 	}
 
@@ -213,11 +225,16 @@ func (l *LiveChat) UnpublishWebcam() {
 		return
 	}
 
-	sid := l.camera.SID()
-	if sid != "" {
-		l.room.LocalParticipant.UnpublishTrack(sid)
+	if err := l.camera.Close(); err != nil {
+		log.Printf("failed to close camera stream: %s", err.Error())
+		return
 	}
-	_ = l.camera.Close()
+
+	if err := l.room.LocalParticipant.UnpublishTrack(l.cameraPub.SID()); err != nil {
+		log.Printf("failed to unpublish camera track: %s", err.Error())
+	}
+
+	l.cameraPub = nil
 	l.camera = nil
 }
 
@@ -230,30 +247,31 @@ func (l *LiveChat) PublishWebcam() error {
 		return fmt.Errorf("cannot publish cam: cam already on")
 	}
 
-	cam, err := NewWebcam()
+	track, err := lksdk.NewLocalSampleTrack(
+		webrtc.RTPCodecCapability{
+			MimeType: webrtc.MimeTypeH264,
+		},
+	)
 	if err != nil {
 		return err
 	}
 
-	err = cam.Start()
+	cam, err := NewWebcam(track)
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		if err == nil {
-			return
-		}
-		log.Println("failed to publish webcam, cleaning up webcam stream")
-		_ = cam.Close()
-	}()
-
-	err = PublishWebcam(l.room, cam)
+	pub, err := l.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+		Name:   "cam",
+		Source: livekit.TrackSource_CAMERA,
+	})
 	if err != nil {
+		track.Close()
 		return err
 	}
 
 	l.camera = cam
+	l.cameraPub = pub
 	return nil
 }
 
@@ -276,7 +294,8 @@ func (l *LiveChat) onTrackSubscribed(
 	case webrtc.RTPCodecTypeVideo:
 		_, err := l.decodeVideoStream(track, publication, rp)
 		if err != nil {
-			log.Fatalf("decodeVideoStream() error - %s", err.Error())
+			log.Printf("decodeVideoStream() error - %s\n", err.Error())
+			return
 		}
 
 	case webrtc.RTPCodecTypeAudio:

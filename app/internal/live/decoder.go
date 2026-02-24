@@ -1,74 +1,81 @@
 package live
 
 import (
+	"fmt"
+	"io"
 	"log"
-	"os"
-	"os/exec"
-	"strings"
 
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
-	"github.com/pion/webrtc/v4/pkg/media"
-	"github.com/pion/webrtc/v4/pkg/media/h264writer"
-	"github.com/pion/webrtc/v4/pkg/media/h265writer"
-	"github.com/pion/webrtc/v4/pkg/media/ivfwriter"
 	"github.com/pion/webrtc/v4/pkg/media/oggwriter"
+	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
+	"github.com/tinyzimmer/go-gst/gst"
+	"github.com/tinyzimmer/go-gst/gst/app"
 )
 
+const maxVideoLate = 1000
+
 func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) (*VideoStream, error) {
+	gst.Init(nil)
+
 	participantID := rp.Identity()
 	trackID := track.ID()
 
 	trackCodec := track.Codec().MimeType
-	log.Printf("participant %s is publishing %s - %s", participantID, trackCodec, pub.Name())
-	var format string
-	switch {
-	case strings.EqualFold(webrtc.MimeTypeVP8, trackCodec), strings.EqualFold(webrtc.MimeTypeVP9, trackCodec), strings.EqualFold(webrtc.MimeTypeAV1, trackCodec):
-		format = "ivf"
-	case strings.EqualFold(webrtc.MimeTypeH264, trackCodec):
-		format = "h264"
-	case strings.EqualFold(webrtc.MimeTypeH265, trackCodec):
-		format = "h265"
-	default:
-		log.Printf("unsuported codec %s", trackCodec)
-		return nil, nil
+	if trackCodec != webrtc.MimeTypeH264 {
+		return nil, fmt.Errorf("can only decode h264")
 	}
 
-	cmd := exec.Command(
-		"ffmpeg",
-		"-f", format,
-		"-analyzeduration", "0",
-		"-probesize", "32",
-		"-fflags", "nobuffer",
-		"-flags", "low_delay",
-		"-i", "pipe:0",
-		"-c:v", "mjpeg",
-		"-q:v", "5",
-		"-f", "mpjpeg",
-		"-boundary_tag", "irchad",
-		"pipe:1",
-	)
-	cmd.Stderr = os.Stderr
+	pipelineStr := "appsrc name=irchad format=time is-live=true ! " +
+		"h264parse ! " +
+		"avdec_h264 !" +
+		"videoconvert ! " +
+		"queue ! " +
+		"jpegenc quality=85 ! " +
+		"appsink name=sink sync=false emit-signals=true drop=true max-buffers=1"
 
-	mediaPipeOut, err := cmd.StdinPipe()
+	pipeline, err := gst.NewPipelineFromString(pipelineStr)
 	if err != nil {
+		return nil, fmt.Errorf("pipeline error: %s", err.Error())
+	}
+
+	mjpegReader, mjpegWriter := io.Pipe()
+	sinkElem, err := pipeline.GetElementByName("sink")
+	if sinkElem == nil {
+		return nil, fmt.Errorf("sinkElem == nil")
+	}
+	if err != nil {
+		log.Printf("couldn't find sink element: %s", err.Error())
 		return nil, err
 	}
+	log.Printf("sinkElement: %+v\n", sinkElem)
 
-	mjpegIn, err := cmd.StdoutPipe()
+	sink := app.SinkFromElement(sinkElem)
+	log.Printf("sink: %+v", sink)
+	sink.SetCallbacks(&app.SinkCallbacks{
+		NewSampleFunc: func(s *app.Sink) gst.FlowReturn {
+			sample := s.PullSample()
+			if sample == nil {
+				return gst.FlowEOS
+			}
+			data := sample.GetBuffer().Bytes()
+			fmt.Fprintf(mjpegWriter, "--irchad\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(data))
+			_, _ = mjpegWriter.Write(data)
+			fmt.Fprintf(mjpegWriter, "\r\n")
+			return gst.FlowOK
+		},
+	})
+
+	err = pipeline.SetState(gst.StatePlaying)
 	if err != nil {
-		return nil, err
-	}
-	// cmd.stderr = os.stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Printf("error launching ffmpeg: %s", err.Error())
+		log.Printf("couldn't set pipeline to playing: %s", err.Error())
 		return nil, err
 	}
 
 	vStream := &VideoStream{
 		Name:   pub.Name(),
-		stream: mjpegIn,
+		stream: mjpegReader,
 	}
 
 	l.registry.Add(
@@ -78,33 +85,38 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 	)
 
 	go func() {
-		defer mediaPipeOut.Close()
-		var writer media.Writer
-
-		switch format {
-		case "ivf":
-			writer, err = ivfwriter.NewWith(mediaPipeOut)
-			if err != nil {
-				log.Printf("error creating ivfwriter: %s", err)
-				return
-			}
-		case "h264":
-			writer = h264writer.NewWith(mediaPipeOut)
-		case "h265":
-			writer = h265writer.NewWith(mediaPipeOut)
+		defer mjpegWriter.Close()
+		defer pipeline.SetState(gst.StateNull)
+		srcElem, err := pipeline.GetElementByName("irchad")
+		if err != nil {
+			log.Printf("failed to get src 'irchad' - %s", err.Error())
+			return
 		}
-
-		defer writer.Close()
-
+		src := app.SrcFromElement(srcElem)
+		sb := samplebuilder.New(
+			maxVideoLate,
+			&codecs.H264Packet{},
+			track.Codec().ClockRate,
+		)
 		for {
 			packet, _, err := track.ReadRTP()
 			if err != nil {
 				break
 			}
 
-			if err := writer.WriteRTP(packet); err != nil {
-				log.Printf("writer error: %s", err.Error())
-				break
+			sb.Push(packet)
+
+			for {
+				sample := sb.Pop()
+				if sample == nil {
+					break
+				}
+
+				buffer := gst.NewBufferFromBytes(sample.Data)
+				buffer.SetDuration(sample.Duration)
+				if src.PushBuffer(buffer) != gst.FlowOK {
+					break
+				}
 			}
 		}
 
@@ -115,8 +127,6 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 }
 
 func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
-	// audioIn, audioOut := io.Pipe()
-
 	stream := &OpusStream{}
 
 	participantID := rp.Identity()
@@ -128,8 +138,6 @@ func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 		&AudioTrackHandler{stream: stream},
 	)
 	go func() {
-		// defer audioOut.Close()
-
 		ogg, err := oggwriter.NewWith(stream, 48000, track.Codec().Channels)
 		if err != nil {
 			log.Printf("ogg writer error: %s", err.Error())
@@ -138,17 +146,14 @@ func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 		defer ogg.Close()
 
 		for {
-			// log.Printf("reading packet from track\n")
 			packet, _, err := track.ReadRTP()
 			if err != nil {
 				break
 			}
 
-			// log.Printf("writing packet to ogg writer: %s\n", packet.String())
 			if err := ogg.WriteRTP(packet); err != nil {
 				break
 			}
-
 		}
 
 		l.registry.Remove(participantID, trackID)
