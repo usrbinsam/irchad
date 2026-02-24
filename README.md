@@ -10,6 +10,15 @@ weird IRC client. For most Discord users, it will feel like a sub-par Discord ex
 IrChad is NOT a drop-in replacement for Discord. You must host and administer
 your own IRCd.
 
+## Features
+
+|              | Windows | Linux | macOS |
+| ------------ | ------- | ----- | ----- |
+| Chat         | x       | x     | x     |
+| Voice        | -       | x     | -     |
+| Camera       | -       | x     | -     |
+| Screen Share | -       | x     | -     |
+
 ## Motivation
 
 I'm mainly building IrChad as the means of a **Discord Exit**. Age verification, obnoxious Nitro advertising, unfriendly to 3rd party SDK developers, politics, multiple security breaches, privacy concerns, and more.
