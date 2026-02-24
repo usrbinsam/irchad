@@ -383,7 +383,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 		return err
 	}
 
-	_, err = l.room.LocalParticipant.PublishTrack(
+	pub, err := l.room.LocalParticipant.PublishTrack(
 		track,
 		&lksdk.TrackPublicationOptions{
 			Name:   w.Title,
@@ -396,5 +396,6 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 	}
 
 	l.screen = screenShare
+	l.screenPub = pub
 	return nil
 }
