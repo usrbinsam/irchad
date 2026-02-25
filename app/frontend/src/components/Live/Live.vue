@@ -6,7 +6,9 @@ const { videoDialog, screenShareDialog } = storeToRefs(liveStore);
 const tracks = computed(() => {
   const out = [];
   for (const [participantIdentity, v] of liveStore.participants.entries()) {
-    for (const track of v.tracks.values())
+    for (const track of v.tracks.values()) {
+      if (track.kind !== "video") continue;
+
       out.push({
         title: participantIdentity,
         id: track.id,
@@ -14,6 +16,7 @@ const tracks = computed(() => {
         source: track.source,
         trackName: track.trackName,
       });
+    }
   }
   return out;
 });

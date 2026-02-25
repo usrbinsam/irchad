@@ -25,7 +25,6 @@ func (o *OpusStream) Write(b []byte) (int, error) {
 
 func (o *OpusStream) Subscribe() ([]byte, chan []byte) {
 	header := append([]byte(nil), o.header...)
-
 	ch := make(chan []byte, 100)
 
 	if o.browser != nil {

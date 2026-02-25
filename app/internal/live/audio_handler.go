@@ -35,20 +35,14 @@ func (h *AudioTrackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_, err := w.Write(b)
-		// log.Printf("wrote %d bytes to browser", n)
 		flusher.Flush()
 		if err != nil {
-			// log.Printf("write error: %s", err.Error())
-			// close(ch)
 			break
 		}
 
 	}
 
 	log.Printf("stream closed")
-	// log.Printf("streaming audio for %s", participantID)
-	// n, _ := io.Copy(w, stream)
-	// log.Printf("stream closed. sent %d MB\n", n/1024)
 }
 
 func (h *AudioTrackHandler) Close() {
