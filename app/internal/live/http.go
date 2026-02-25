@@ -76,6 +76,7 @@ func (l *LiveChat) serveStream(w http.ResponseWriter, r *http.Request) {
 
 	l.registry.mu.RLock()
 	tracks, ok := l.registry.streams[participantID]
+	l.registry.mu.RUnlock()
 
 	var handler StreamHandler
 
