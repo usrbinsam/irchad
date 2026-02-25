@@ -67,6 +67,10 @@ export function setupEvents() {
   Events.On("live:screen-share-closed", () => {
     useLiveStore().screenShareEnabled = false;
   });
+
+  Events.On("live:participant-track-unpublished", (event) => {
+    useLiveStore().delTrack(event.data.Identity, event.data.TrackID);
+  });
 }
 
 export async function connect(channel: string) {

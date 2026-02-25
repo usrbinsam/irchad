@@ -92,6 +92,16 @@ func (l *LiveChat) Connect(nick string, channelName string) error {
 		OnParticipantDisconnected: l.onParticipantDisconnected,
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnTrackSubscribed: l.onTrackSubscribed,
+			OnTrackUnpublished: func(publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
+				app := application.Get()
+				app.Event.Emit(
+					EventParticipantTrackUnpublished,
+					ParticipantTrackUnpublished{
+						Identity: rp.Identity(),
+						TrackID:  publication.Track().ID(),
+					},
+				)
+			},
 		},
 	}
 
@@ -346,6 +356,14 @@ func (l *LiveChat) UnpublishScreenShare() {
 		return
 	}
 	l.screen = nil
+
+	if l.screenAudio != nil {
+		_ = l.screenAudio.Close()
+	}
+	if l.screenAudioPub != nil {
+		_ = l.room.LocalParticipant.UnpublishTrack(l.screenPub.SID())
+	}
+
 	err = l.room.LocalParticipant.UnpublishTrack(l.screenPub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish screen share track: %s", err.Error())

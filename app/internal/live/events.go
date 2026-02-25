@@ -3,10 +3,11 @@ package live
 import "github.com/wailsapp/wails/v3/pkg/application"
 
 const (
-	EventParticipantConnected      = "live:participant-connected"
-	EventParticipantDisconnected   = "live:participant-dissconnected"
-	EventParticipantTrackPublished = "live:participant-track-published"
-	EventScreenShareClosed         = "live:screen-share-closed"
+	EventParticipantConnected        = "live:participant-connected"
+	EventParticipantDisconnected     = "live:participant-dissconnected"
+	EventParticipantTrackPublished   = "live:participant-track-published"
+	EventParticipantTrackUnpublished = "live:participant-track-unpublished"
+	EventScreenShareClosed           = "live:screen-share-closed"
 )
 
 type ParticipantConnected struct {
@@ -29,11 +30,17 @@ type ParticipantTrackPublished struct {
 	TrackName    string
 }
 
+type ParticipantTrackUnpublished struct {
+	Identity string
+	TrackID  string
+}
+
 type ScreenShareClosed struct{}
 
 func RegisterEvents() {
 	application.RegisterEvent[ParticipantConnected](EventParticipantConnected)
 	application.RegisterEvent[ParticipantDisconnected](EventParticipantDisconnected)
 	application.RegisterEvent[ParticipantTrackPublished](EventParticipantTrackPublished)
+	application.RegisterEvent[ParticipantTrackUnpublished](EventParticipantTrackUnpublished)
 	application.RegisterEvent[ScreenShareClosed](EventScreenShareClosed)
 }

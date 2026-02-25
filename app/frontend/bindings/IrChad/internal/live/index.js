@@ -11,6 +11,7 @@ export {
     ParticipantConnected,
     ParticipantDisconnected,
     ParticipantTrackPublished,
+    ParticipantTrackUnpublished,
     ScreenShareClosed,
     ScreenShareOpts,
     WindowData

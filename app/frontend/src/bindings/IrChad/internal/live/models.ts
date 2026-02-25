@@ -102,6 +102,31 @@ export class ParticipantTrackPublished {
     }
 }
 
+export class ParticipantTrackUnpublished {
+    "Identity": string;
+    "TrackID": string;
+
+    /** Creates a new ParticipantTrackUnpublished instance. */
+    constructor($$source: Partial<ParticipantTrackUnpublished> = {}) {
+        if (!("Identity" in $$source)) {
+            this["Identity"] = "";
+        }
+        if (!("TrackID" in $$source)) {
+            this["TrackID"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ParticipantTrackUnpublished instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ParticipantTrackUnpublished {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ParticipantTrackUnpublished($$parsedSource as Partial<ParticipantTrackUnpublished>);
+    }
+}
+
 export class ScreenShareClosed {
 
     /** Creates a new ScreenShareClosed instance. */
@@ -151,6 +176,8 @@ export class WindowData {
     "Y": number;
     "W": number;
     "H": number;
+    "PID": number;
+    "WMClass": string;
 
     /** Creates a new WindowData instance. */
     constructor($$source: Partial<WindowData> = {}) {
@@ -171,6 +198,12 @@ export class WindowData {
         }
         if (!("H" in $$source)) {
             this["H"] = 0;
+        }
+        if (!("PID" in $$source)) {
+            this["PID"] = 0;
+        }
+        if (!("WMClass" in $$source)) {
+            this["WMClass"] = "";
         }
 
         Object.assign(this, $$source);

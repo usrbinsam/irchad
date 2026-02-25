@@ -150,6 +150,41 @@ export class ParticipantTrackPublished {
     }
 }
 
+export class ParticipantTrackUnpublished {
+    /**
+     * Creates a new ParticipantTrackUnpublished instance.
+     * @param {Partial<ParticipantTrackUnpublished>} [$$source = {}] - The source object to create the ParticipantTrackUnpublished.
+     */
+    constructor($$source = {}) {
+        if (!("Identity" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["Identity"] = "";
+        }
+        if (!("TrackID" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["TrackID"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ParticipantTrackUnpublished instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {ParticipantTrackUnpublished}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ParticipantTrackUnpublished(/** @type {Partial<ParticipantTrackUnpublished>} */($$parsedSource));
+    }
+}
+
 export class ScreenShareClosed {
     /**
      * Creates a new ScreenShareClosed instance.

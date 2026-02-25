@@ -41,6 +41,12 @@ export const useLiveStore = defineStore("liveStore", () => {
     p.tracks.set(track.id, track);
   }
 
+  function delTrack(participantID: string, trackID: string) {
+    const p = participants.value.get(participantID);
+    if (!p) return;
+    p.tracks.delete(trackID);
+  }
+
   function dropParticipant(id: string) {
     participants.value.delete(id);
   }
@@ -80,6 +86,7 @@ export const useLiveStore = defineStore("liveStore", () => {
     reset,
     addParticipant,
     addTrack,
+    delTrack,
     dropParticipant,
     showTrack,
   };
