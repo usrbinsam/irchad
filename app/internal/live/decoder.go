@@ -132,6 +132,7 @@ func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 	participantID := rp.Identity()
 	trackID := track.ID()
 
+	log.Printf("decoding audio track from %s: %s %s", rp.Identity(), pub.Name(), pub.Source())
 	l.registry.Add(
 		participantID,
 		trackID,
@@ -156,6 +157,7 @@ func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 			}
 		}
 
+		log.Printf("decoding ended for %s: %s %s", rp.Identity(), pub.Name(), pub.Source())
 		l.registry.Remove(participantID, trackID)
 	}()
 }
