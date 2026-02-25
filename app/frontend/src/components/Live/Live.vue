@@ -7,7 +7,7 @@ const tracks = computed(() => {
   const out = [];
   for (const [participantIdentity, v] of liveStore.participants.entries()) {
     for (const track of v.tracks.values()) {
-      if (track.kind !== "video") continue;
+      if (track.kind.toLowerCase() !== "video") continue;
 
       out.push({
         title: participantIdentity,
