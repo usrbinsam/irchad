@@ -279,7 +279,11 @@ func getPipewireNodeID(applicationPID uint) (uint, error) {
 		nodePID := strconv.Itoa(int(nodePIDf64))
 
 		if nodePID == searchPID {
-			return node.ID, nil
+			serial, ok := node.Info.Props["object.serial"].(float64)
+			if !ok {
+				return 0, fmt.Errorf("pw node missing `object.serial' prop")
+			}
+			return uint(serial), nil
 		}
 	}
 
@@ -339,7 +343,7 @@ func NewGstAppAudioShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWrite
 			"audioresample ! "+
 			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+
 			"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! "+
-			"appsink name=sink",
+			"appsink name=sink sync=false emit-signals=true drop=true max-buffers=1",
 		nodeID,
 	)
 	return NewGstTrackWriter(track, pipelineStr, 20*time.Millisecond)
