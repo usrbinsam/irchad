@@ -12,5 +12,12 @@ export {
     ParticipantDisconnected,
     ParticipantTrackPublished,
     ScreenShareClosed,
+    ScreenShareOpts,
     WindowData
 } from "./models.js";
+
+import * as $models from "./models.js";
+
+/**
+ * @typedef {$models.FrameRate} FrameRate
+ */

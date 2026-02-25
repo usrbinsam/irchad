@@ -6,6 +6,10 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+/**
+ * @typedef {number} FrameRate
+ */
+
 export class ParticipantConnected {
     /**
      * Creates a new ParticipantConnected instance.
@@ -164,6 +168,41 @@ export class ScreenShareClosed {
     static createFrom($$source = {}) {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new ScreenShareClosed(/** @type {Partial<ScreenShareClosed>} */($$parsedSource));
+    }
+}
+
+export class ScreenShareOpts {
+    /**
+     * Creates a new ScreenShareOpts instance.
+     * @param {Partial<ScreenShareOpts>} [$$source = {}] - The source object to create the ScreenShareOpts.
+     */
+    constructor($$source = {}) {
+        if (!("FrameRate" in $$source)) {
+            /**
+             * @member
+             * @type {FrameRate}
+             */
+            this["FrameRate"] = 0;
+        }
+        if (!("BitRate" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["BitRate"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ScreenShareOpts instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {ScreenShareOpts}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ScreenShareOpts(/** @type {Partial<ScreenShareOpts>} */($$parsedSource));
     }
 }
 

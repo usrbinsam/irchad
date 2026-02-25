@@ -11,6 +11,7 @@ import {
   UnpublishScreenShare,
 } from "@/bindings/IrChad/internal/live/livechat";
 import { useAccountStore } from "@/stores/accountStore";
+import type { ScreenShareOpts } from "@/bindings/IrChad/internal/live";
 
 const playConnectionChime = () => {
   // Initialize the browser's native audio engine
@@ -111,8 +112,8 @@ export async function getWindows() {
   return await GetWindows();
 }
 
-export async function shareWindow(id: number) {
-  await PublishScreenShare(id);
+export async function shareWindow(id: number, opts: ScreenShareOpts) {
+  await PublishScreenShare(id, opts);
   useLiveStore().screenShareEnabled = true;
 }
 

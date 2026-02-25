@@ -11,5 +11,10 @@ export {
     ParticipantDisconnected,
     ParticipantTrackPublished,
     ScreenShareClosed,
+    ScreenShareOpts,
     WindowData
+} from "./models.js";
+
+export type {
+    FrameRate
 } from "./models.js";

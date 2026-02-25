@@ -5,6 +5,8 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+export type FrameRate = number;
+
 export class ParticipantConnected {
     "Identity": string;
     "Channel": string;
@@ -114,6 +116,31 @@ export class ScreenShareClosed {
     static createFrom($$source: any = {}): ScreenShareClosed {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new ScreenShareClosed($$parsedSource as Partial<ScreenShareClosed>);
+    }
+}
+
+export class ScreenShareOpts {
+    "FrameRate": FrameRate;
+    "BitRate": number;
+
+    /** Creates a new ScreenShareOpts instance. */
+    constructor($$source: Partial<ScreenShareOpts> = {}) {
+        if (!("FrameRate" in $$source)) {
+            this["FrameRate"] = 0;
+        }
+        if (!("BitRate" in $$source)) {
+            this["BitRate"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ScreenShareOpts instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ScreenShareOpts {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ScreenShareOpts($$parsedSource as Partial<ScreenShareOpts>);
     }
 }
 

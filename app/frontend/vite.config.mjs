@@ -2,7 +2,6 @@ import Vue from "@vitejs/plugin-vue";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import Vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 import { defineConfig } from "vite";
 import { fileURLToPath, URL } from "node:url";

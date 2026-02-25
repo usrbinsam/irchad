@@ -31,8 +31,8 @@ export function PublishMicrophone(): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.PublishMicrophone");
 }
 
-export function PublishScreenShare(ID: number): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.PublishScreenShare", ID);
+export function PublishScreenShare(ID: number, ss: $models.ScreenShareOpts): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.PublishScreenShare", ID, ss);
 }
 
 export function PublishWebcam(): $CancellablePromise<void> {

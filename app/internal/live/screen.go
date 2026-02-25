@@ -12,9 +12,9 @@ type WindowData struct {
 	W, H  uint
 }
 
-type ScreenShareParams struct {
-	FrameRate  FrameRate
-	Resolution Resolution
+type ScreenShareOpts struct {
+	FrameRate FrameRate
+	BitRate   int
 }
 
 type ScreenSharer interface {

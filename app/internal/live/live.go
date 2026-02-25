@@ -349,7 +349,7 @@ func (l *LiveChat) UnpublishScreenShare() {
 	application.Get().Event.Emit(EventScreenShareClosed)
 }
 
-func (l *LiveChat) PublishScreenShare(ID uint32) error {
+func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 	if !l.Connected() {
 		return fmt.Errorf("cannot publish screen: not connected to a room")
 	}
@@ -378,7 +378,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32) error {
 	)
 
 	log.Printf("starting screen share for: %+v", w)
-	screenShare, err := NewScreenShare(w, track)
+	screenShare, err := NewScreenShare(w, track, &ss)
 	if err != nil {
 		fmt.Errorf("GStreamer error: %s", err.Error())
 		return err

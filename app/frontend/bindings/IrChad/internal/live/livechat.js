@@ -51,10 +51,11 @@ export function PublishMicrophone() {
 
 /**
  * @param {number} ID
+ * @param {$models.ScreenShareOpts} ss
  * @returns {$CancellablePromise<void>}
  */
-export function PublishScreenShare(ID) {
-    return $Call.ByID(2179788497, ID);
+export function PublishScreenShare(ID, ss) {
+    return $Call.ByID(2179788497, ID, ss);
 }
 
 /**

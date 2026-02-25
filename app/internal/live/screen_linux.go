@@ -73,6 +73,7 @@ import "C"
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
 	"time"
 	"unsafe"
@@ -152,24 +153,43 @@ func (w *WindowData) Thumbnail() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func NewScreenShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter, error) {
-	return NewGstScreenShare(w, track)
+func NewScreenShare(w *WindowData, track *lksdk.LocalTrack, ss *ScreenShareOpts) (*GstTrackWriter, error) {
+	return NewGstScreenShare(w, track, ss)
 }
 
-func NewGstScreenShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter, error) {
+func hasElement(name string) bool {
+	factory := gst.Find(name)
+	return factory != nil
+}
+
+func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
+	if hasElement("vah264enc") {
+		return fmt.Sprintf(
+			"ximagesrc xid=%d use-damage=0 ! "+
+				"videoconvert ! "+
+				"videoscale ! "+
+				"video/x-raw,format=NV12,width=%d,height=%d ! "+
+				// "vapostproc ! "+
+				"vah264enc bitrate=%d ! "+
+				"h264parse config-interval=-1 ! "+
+				"video/x-h264,stream-format=byte-stream,alignment=au ! "+
+				"appsink name=sink sync=false emit-signals=true drop=true max-buffers=1",
+			w.ID, w.W&^1, w.H&^1, ss.BitRate,
+		)
+	}
+
+	if hasElement("nvh264enc") {
+		return "nvh264enc"
+	}
+
+	return fmt.Sprintf("x264enc tune=zerolatency speed-preset=veryfast bitrate=%d key-int-max=%d", ss.BitRate, ss.FrameRate)
+}
+
+func NewGstScreenShare(w *WindowData, track *lksdk.LocalTrack, ss *ScreenShareOpts) (*GstTrackWriter, error) {
 	gst.Init(nil)
 
-	pipelineStr := fmt.Sprintf(
-		"ximagesrc xid=%d use-damage=0 ! "+
-			"videoconvert ! "+
-			"videoscale ! "+
-			"video/x-raw,format=I420,framerate=30/1,width=%d,height=%d ! "+
-			"x264enc tune=zerolatency speed-preset=veryfast key-int-max=30 bitrate=8000 ! "+
-			"h264parse config-interval=-1 ! "+
-			"video/x-h264,stream-format=byte-stream,alignment=au ! "+ // FORCE ANNEX-B
-			"appsink name=sink sync=false emit-signals=true drop=true max-buffers=1",
-		w.ID, w.W&^1, w.H&^1,
-	)
+	pipelineStr := preferredEncoder(w, ss)
+	log.Printf("selected encoder: %s\n", pipelineStr)
 
 	return NewGstTrackWriter(track, pipelineStr, time.Second/30)
 }
