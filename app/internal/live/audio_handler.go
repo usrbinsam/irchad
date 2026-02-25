@@ -10,6 +10,9 @@ type AudioTrackHandler struct {
 }
 
 func (h *AudioTrackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		return
+	}
 	w.Header().Set("content-type", "audio/ogg")
 	w.Header().Set("cache-control", "no-cache")
 	w.Header().Set("connection", "keep-alive")
@@ -28,7 +31,7 @@ func (h *AudioTrackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for {
 		b, ok := <-ch
 		if !ok {
-			log.Printf("channel closed")
+			log.Printf("channel closed for %+v", h)
 			return
 		}
 		_, err := w.Write(b)
