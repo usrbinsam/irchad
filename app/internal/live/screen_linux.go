@@ -3,24 +3,30 @@ package live
 /*
 #cgo LDFLAGS: -lX11
 #include <stdlib.h>
+#include <string.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/Xutil.h>
 
 typedef struct {
     unsigned long id;
+		unsigned int pid;
     int x, y;
     unsigned int width, height;
     char* title;
+		char* wm_class;
 } WinInfo;
 
 static Atom atom_client_list = None;
 static Atom atom_wm_name = None;
+static Atom atom_wm_pid = None;
 static Atom atom_utf8 = None;
 
 void init_atoms(Display* disp) {
     if (atom_client_list == None) {
         atom_client_list = XInternAtom(disp, "_NET_CLIENT_LIST", False);
         atom_wm_name     = XInternAtom(disp, "_NET_WM_NAME", False);
+				atom_wm_pid      = XInternAtom(disp, "_NET_WM_PID", False);
         atom_utf8        = XInternAtom(disp, "UTF8_STRING", False);
     }
 }
@@ -57,6 +63,31 @@ WinInfo get_win_info(Display* disp, Window win) {
         info.title = NULL;
     }
 
+		XClassHint ch;
+    if (XGetClassHint(disp, win, &ch)) {
+        if (ch.res_class) {
+            info.wm_class = strdup(ch.res_class);
+            XFree(ch.res_class);
+        } else if (ch.res_name) {
+            info.wm_class = strdup(ch.res_name);
+        }
+
+        if (ch.res_name) {
+            XFree(ch.res_name);
+        }
+    } else {
+        info.wm_class = NULL;
+    }
+
+		unsigned char* pid_data = NULL;
+		if (XGetWindowProperty(disp, win, atom_wm_pid, 0, 1, False, XA_CARDINAL,
+                           &type, &format, &nitems, &after, &pid_data) == Success && pid_data) {
+        if (type == XA_CARDINAL && format == 32 && nitems > 0) {
+            info.pid = (unsigned int)(*((unsigned long*)pid_data));
+        }
+        XFree(pid_data); // Free immediately, we just needed the integer
+    }
+
     Window root, child;
     unsigned int border, depth;
     int local_x, local_y;
@@ -71,10 +102,13 @@ WinInfo get_win_info(Display* disp, Window win) {
 import "C"
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
+	"strconv"
 	"time"
 	"unsafe"
 
@@ -109,21 +143,25 @@ func GetWindows() ([]WindowData, error) {
 			C.XFree(unsafe.Pointer(info.title))
 		}
 
-		// if info.x < 0 || info.y < 0 {
-		// 	continue
-		// }
-
 		if title == "" {
 			title = "(unnamed)"
 		}
 
+		var wmClass string
+		if info.wm_class != nil {
+			wmClass = C.GoString(info.wm_class)
+			C.XFree(unsafe.Pointer(info.wm_class))
+		}
+
 		results = append(results, WindowData{
-			ID:    uint32(info.id),
-			Title: title,
-			X:     int(info.x),
-			Y:     int(info.y),
-			W:     uint(info.width),
-			H:     uint(info.height),
+			ID:      uint32(info.id),
+			Title:   title,
+			X:       int(info.x),
+			Y:       int(info.y),
+			W:       uint(info.width),
+			H:       uint(info.height),
+			PID:     uint(info.pid),
+			WMClass: wmClass,
 		})
 	}
 
@@ -155,6 +193,10 @@ func (w *WindowData) Thumbnail() ([]byte, error) {
 
 func NewScreenShare(w *WindowData, track *lksdk.LocalTrack, ss *ScreenShareOpts) (*GstTrackWriter, error) {
 	return NewGstScreenShare(w, track, ss)
+}
+
+func NewAppAudioShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter, error) {
+	return NewGstAppAudioShare(w, track)
 }
 
 func hasElement(name string) bool {
@@ -192,4 +234,113 @@ func NewGstScreenShare(w *WindowData, track *lksdk.LocalTrack, ss *ScreenShareOp
 	log.Printf("selected encoder: %s\n", pipelineStr)
 
 	return NewGstTrackWriter(track, pipelineStr, time.Second/30)
+}
+
+type PwNode struct {
+	ID   uint   `json:"id"`
+	Type string `json:"type"`
+	Info struct {
+		Props map[string]any `json:"props"`
+	} `json:"info"`
+}
+
+func getPipewireNodeID(applicationPID uint) (uint, error) {
+	out := bytes.Buffer{}
+	cmd := exec.Command("pw-dump")
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return 0, err
+	}
+
+	dec := json.NewDecoder(&out)
+	var nodes []PwNode
+	err = dec.Decode(&nodes)
+	if err != nil {
+		return 0, err
+	}
+
+	searchPID := strconv.Itoa(int(applicationPID))
+	for _, node := range nodes {
+		if node.Type != "PipeWire:Interface:Node" {
+			continue
+		}
+
+		mediaClass, ok := node.Info.Props["media.class"].(string)
+		if !ok || mediaClass != "Stream/Output/Audio" {
+			continue
+		}
+
+		nodePIDf64, ok := node.Info.Props["application.process.id"].(float64)
+		if !ok {
+			continue
+		}
+
+		nodePID := strconv.Itoa(int(nodePIDf64))
+
+		if nodePID == searchPID {
+			return node.ID, nil
+		}
+	}
+
+	return 0, fmt.Errorf("no pipewire node found")
+}
+
+func listChildPIDs(parentPID uint) ([]uint, error) {
+	out := bytes.Buffer{}
+	parentPIDStr := strconv.Itoa(int(parentPID))
+	cmd := exec.Command("pgrep", "-P", parentPIDStr)
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(&out)
+	pids := make([]uint, 0)
+	for scanner.Scan() {
+		pidStr := scanner.Text()
+		pidInt, err := strconv.Atoi(pidStr)
+		if err != nil {
+			log.Printf("invalid output from pgrep %q - %s", pidStr, err.Error())
+			continue
+		}
+		pids = append(pids, uint(pidInt))
+	}
+	return pids, nil
+}
+
+func NewGstAppAudioShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter, error) {
+	gst.Init(nil)
+	log.Printf("grabbing audio for window %+v\n", w)
+	nodeID, err := getPipewireNodeID(w.PID)
+	if err != nil {
+		log.Printf("no pipewire node for pid %d. searching child PIDs", w.PID)
+		childPIDs, err := listChildPIDs(w.PID)
+		if err != nil {
+			log.Printf("error looking up child PIDs for %d: %s", w.PID, err.Error())
+			return nil, err
+		}
+		for _, pid := range childPIDs {
+			childNodeID, err := getPipewireNodeID(pid)
+			if err != nil {
+				log.Printf("no pipewire node for child PID %d", childNodeID)
+				continue
+			}
+			nodeID = childNodeID
+			break
+		}
+	}
+
+	log.Printf("found pipewire node %d", nodeID)
+	pipelineStr := fmt.Sprintf(
+		"pipewiresrc target-object=%d ! "+
+			"audioconvert ! "+
+			"audioresample ! "+
+			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+
+			"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! "+
+			"appsink name=sink",
+		nodeID,
+	)
+	return NewGstTrackWriter(track, pipelineStr, 20*time.Millisecond)
 }

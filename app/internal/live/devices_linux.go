@@ -2,6 +2,7 @@ package live
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -10,47 +11,10 @@ import (
 	"github.com/tinyzimmer/go-gst/gst/app"
 )
 
-func ffmpegWebcamCapture() (*StreamedProcess, error) {
-	return NewStreamedProcess(
-		"ffmpeg",
-		"-f",
-		"v4l2",
-		"-i",
-		"/dev/video0",
-		"-c:v",
-		"libvpx",
-		"-b:v",
-		"2M",
-		"-deadline",
-		"realtime",
-		"-f",
-		"ivf",
-		"pipe:1",
-	)
-}
-
-func ffmpegMicCapture() (*StreamedProcess, error) {
-	return NewStreamedProcess(
-		"ffmpeg",
-		"-f",
-		"pulse",
-		"-i",
-		"default",
-		"-c:a",
-		"libopus",
-		"-b:a",
-		"64k",
-		"-vbr",
-		"on",
-		"-f",
-		"opus",
-		"pipe:1",
-	)
-}
-
 func NewGstTrackWriter(track *lksdk.LocalTrack, plstr string, duration time.Duration) (*GstTrackWriter, error) {
 	gst.Init(nil)
 
+	log.Printf("gst pipeline: %s", plstr)
 	pipeline, err := gst.NewPipelineFromString(plstr)
 	if err != nil {
 		return nil, fmt.Errorf("pipeline error: %s", err.Error())

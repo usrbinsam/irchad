@@ -30,10 +30,15 @@ type LiveChat struct {
 
 	microphone    io.Closer
 	microphonePub *lksdk.LocalTrackPublication
-	camera        io.Closer
-	cameraPub     *lksdk.LocalTrackPublication
-	screen        io.Closer
-	screenPub     *lksdk.LocalTrackPublication
+
+	camera    io.Closer
+	cameraPub *lksdk.LocalTrackPublication
+
+	screen    io.Closer
+	screenPub *lksdk.LocalTrackPublication
+
+	screenAudio    io.Closer
+	screenAudioPub *lksdk.LocalTrackPublication
 }
 
 func (l *LiveChat) getToken(identity, room string) (string, error) {
@@ -398,5 +403,35 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 
 	l.screen = screenShare
 	l.screenPub = pub
+
+	audioTrack, err := lksdk.NewLocalSampleTrack(
+		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus},
+	)
+	if err != nil {
+		return err
+	}
+
+	audioScreenShare, err := NewAppAudioShare(w, audioTrack)
+	if err != nil {
+		log.Printf("failed to publish app audio for %+v: %s\n", w, err.Error())
+		return err
+	}
+
+	audioPub, err := l.room.LocalParticipant.PublishTrack(
+		audioTrack,
+		&lksdk.TrackPublicationOptions{
+			Name:   w.Title,
+			Source: livekit.TrackSource_SCREEN_SHARE_AUDIO,
+		},
+	)
+	if err != nil {
+		_ = audioScreenShare.Close()
+		log.Printf("failed to publish app audio for %+v: %s\n", w, err.Error())
+		return err
+	}
+
+	l.screenAudio = audioScreenShare
+	l.screenAudioPub = audioPub
+
 	return nil
 }

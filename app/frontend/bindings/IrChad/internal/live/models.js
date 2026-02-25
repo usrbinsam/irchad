@@ -254,6 +254,20 @@ export class WindowData {
              */
             this["H"] = 0;
         }
+        if (!("PID" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["PID"] = 0;
+        }
+        if (!("WMClass" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["WMClass"] = "";
+        }
 
         Object.assign(this, $$source);
     }

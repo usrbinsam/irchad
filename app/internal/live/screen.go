@@ -6,10 +6,12 @@ type (
 )
 
 type WindowData struct {
-	ID    uint32
-	Title string
-	X, Y  int
-	W, H  uint
+	ID      uint32
+	Title   string
+	X, Y    int
+	W, H    uint
+	PID     uint
+	WMClass string
 }
 
 type ScreenShareOpts struct {

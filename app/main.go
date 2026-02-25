@@ -2,6 +2,8 @@ package main
 
 import (
 	"embed"
+	"os"
+	"runtime"
 
 	"IrChad/internal/live"
 
@@ -16,6 +18,9 @@ func init() {
 }
 
 func main() {
+	if runtime.GOOS == "linux" {
+		_ = os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
+	}
 	app := application.New(
 		application.Options{
 			Name: "IrChad",
@@ -36,20 +41,6 @@ func main() {
 			Height: 768,
 		},
 	)
-
-	// TODO: this should only run on Linux
-	// go func() {
-	// 	fmt.Printf("hacking window\n")
-	// 	for {
-	// 		time.Sleep(500 * time.Millisecond)
-	// 		ptr := window.NativeWindow()
-	// 		if ptr == nil {
-	// 			continue
-	// 		}
-	// 		hack.HackAllowGetUserMedia(ptr)
-	// 		break
-	// 	}
-	// }()
 
 	if err := app.Run(); err != nil {
 		panic(err)
