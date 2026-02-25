@@ -126,7 +126,8 @@ func (l *LiveChat) Connect(nick string, channelName string) error {
 
 		for _, pub := range rp.TrackPublications() {
 			if remotePub, ok := pub.(*lksdk.RemoteTrackPublication); ok {
-				if track := remotePub.Track(); track != nil {
+				if track := remotePub.TrackRemote(); track != nil {
+					l.onTrackSubscribed(track, remotePub, rp)
 				}
 			}
 		}
