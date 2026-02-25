@@ -67,8 +67,6 @@ export function setupEvents() {
   Events.On("live:screen-share-closed", () => {
     useLiveStore().screenShareEnabled = false;
   });
-
-  console.log("live events registered");
 }
 
 export async function connect(channel: string) {
