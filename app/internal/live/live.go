@@ -291,7 +291,6 @@ func (l *LiveChat) onTrackSubscribed(
 ) {
 	identity := rp.Identity()
 	trackID := track.ID()
-	log.Printf("track subscribed: %s/%s\n", l.room.Name(), rp.Identity())
 
 	kind := track.Kind()
 	app := application.Get()
@@ -321,7 +320,7 @@ func (l *LiveChat) onTrackSubscribed(
 		),
 	}
 
-	log.Printf("Published: %+v", ev)
+	log.Printf("new remote track published: %+v", ev)
 	app.Event.Emit(
 		EventParticipantTrackPublished, ev,
 	)
