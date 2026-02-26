@@ -7,6 +7,7 @@ import (
 
 	"IrChad/internal/live"
 
+	"github.com/tinyzimmer/go-gst/gst"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -21,6 +22,7 @@ func main() {
 	if runtime.GOOS == "linux" {
 		_ = os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
 	}
+	gst.Init(nil)
 	app := application.New(
 		application.Options{
 			Name: "IrChad",

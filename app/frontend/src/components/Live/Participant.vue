@@ -5,7 +5,8 @@ const props = defineProps<{ participant: Participant }>();
 const audioTracks: ComputedRef<string[]> = computed(() => {
   const out = [];
   for (const track of props.participant.tracks.values()) {
-    if (track.kind === "audio") out.push(track.subscribeURL);
+    if (track.kind === "audio" && track.source === "MICROPHONE")
+      out.push(track.subscribeURL);
   }
   return out;
 });

@@ -11,6 +11,7 @@ import (
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4"
+	"github.com/tinyzimmer/go-gst/gst"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -34,10 +35,9 @@ type LiveChat struct {
 	camera    io.Closer
 	cameraPub *lksdk.LocalTrackPublication
 
-	screen    io.Closer
+	screen    *gst.Pipeline
 	screenPub *lksdk.LocalTrackPublication
 
-	screenAudio    io.Closer
 	screenAudioPub *lksdk.LocalTrackPublication
 }
 
@@ -305,6 +305,12 @@ func (l *LiveChat) onTrackSubscribed(
 
 	kind := track.Kind()
 	app := application.Get()
+	source := publication.Source()
+
+	if source == livekit.TrackSource_SCREEN_SHARE || source == livekit.TrackSource_SCREEN_SHARE_AUDIO {
+		l.decodeScreenShare(track, publication, rp)
+		return
+	}
 	switch kind {
 	case webrtc.RTPCodecTypeVideo:
 		_, err := l.decodeVideoStream(track, publication, rp)
@@ -341,34 +347,24 @@ func (l *LiveChat) GetWindows() ([]WindowData, error) {
 	return GetWindows()
 }
 
-func (l *LiveChat) Thumbnail(w WindowData) ([]byte, error) {
-	return w.Thumbnail()
-}
-
 func (l *LiveChat) UnpublishScreenShare() {
 	log.Printf("Unpublish screen share requested")
 	if l.screen == nil {
 		return
 	}
-	err := l.screen.Close()
+	err := l.screen.SetState(gst.StateNull)
 	if err != nil {
 		log.Printf("failed to stop screen share: %s", err.Error())
 		return
 	}
 	l.screen = nil
 
-	if l.screenAudio != nil {
-		_ = l.screenAudio.Close()
-	}
-	if l.screenAudioPub != nil {
-		_ = l.room.LocalParticipant.UnpublishTrack(l.screenPub.SID())
-	}
-
-	err = l.room.LocalParticipant.UnpublishTrack(l.screenPub.SID())
+	err = l.room.LocalParticipant.UnpublishTrack(l.screenAudioPub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish screen share track: %s", err.Error())
 		return
 	}
+	l.screenAudioPub = nil
 	application.Get().Event.Emit(EventScreenShareClosed)
 }
 
@@ -394,21 +390,33 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		return fmt.Errorf("invalid window ID")
 	}
 
-	track, err := lksdk.NewLocalSampleTrack(
+	videoTrack, err := lksdk.NewLocalSampleTrack(
 		webrtc.RTPCodecCapability{
 			MimeType: webrtc.MimeTypeH264,
 		},
 	)
-
-	log.Printf("starting screen share for: %+v", w)
-	screenShare, err := NewScreenShare(w, track, &ss)
 	if err != nil {
-		fmt.Errorf("GStreamer error: %s", err.Error())
+		log.Printf("error creating video track: %s", err.Error())
 		return err
 	}
 
-	pub, err := l.room.LocalParticipant.PublishTrack(
-		track,
+	audioTrack, err := lksdk.NewLocalSampleTrack(
+		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus},
+	)
+	if err != nil {
+		log.Printf("error creating audio track: %s", err.Error())
+		return err
+	}
+
+	log.Printf("new screen share for %s - audio=%s video=%s", w.Title, audioTrack.ID(), videoTrack.ID())
+	screenShare, err := NewScreenShare(w, &ss, audioTrack, videoTrack)
+	if err != nil {
+		log.Printf("GStreamer error: %s", err.Error())
+		return err
+	}
+
+	videoPub, err := l.room.LocalParticipant.PublishTrack(
+		videoTrack,
 		&lksdk.TrackPublicationOptions{
 			Name:   w.Title,
 			Source: livekit.TrackSource_SCREEN_SHARE,
@@ -420,20 +428,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 	}
 
 	l.screen = screenShare
-	l.screenPub = pub
-
-	audioTrack, err := lksdk.NewLocalSampleTrack(
-		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus},
-	)
-	if err != nil {
-		return err
-	}
-
-	audioScreenShare, err := NewAppAudioShare(w, audioTrack)
-	if err != nil {
-		log.Printf("failed to publish app audio for %+v: %s\n", w, err.Error())
-		return err
-	}
+	l.screenPub = videoPub
 
 	audioPub, err := l.room.LocalParticipant.PublishTrack(
 		audioTrack,
@@ -443,12 +438,10 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		},
 	)
 	if err != nil {
-		_ = audioScreenShare.Close()
-		log.Printf("failed to publish app audio for %+v: %s\n", w, err.Error())
+		log.Printf("failed to publish screen audio track: %s", err.Error())
 		return err
 	}
 
-	l.screenAudio = audioScreenShare
 	l.screenAudioPub = audioPub
 
 	return nil

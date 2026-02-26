@@ -9,7 +9,11 @@ const props = defineProps<{
 </script>
 
 <template>
-  <v-img :src="url" content-class="video-feed d-flex align-end pb-2 px-2">
+  <v-img
+    v-if="source === 'WEBCAM'"
+    :src="url"
+    content-class="video-feed d-flex align-end pb-2 px-2"
+  >
     <v-chip
       color="rgba(0,0,0,0.6)"
       size="small"
@@ -17,7 +21,6 @@ const props = defineProps<{
     >
       {{ title }}</v-chip
     >
-    <v-chip v-if="source === 'SCREEN'">{{ trackName }}</v-chip>
     <template #placeholder>
       <div
         class="d-flex align-center justify-center fill-height bg-grey-darken-3"
@@ -26,6 +29,12 @@ const props = defineProps<{
       </div>
     </template>
   </v-img>
+  <video
+    v-else
+    :src="url"
+    class="video-feed d-flex align-end pb-2 px-2"
+    autoplay
+  ></video>
 </template>
 
 <style scoped>

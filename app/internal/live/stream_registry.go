@@ -39,3 +39,19 @@ func (r *StreamRegistry) Remove(participantID, trackID string) {
 		}
 	}
 }
+
+func (r *StreamRegistry) Get(participantID, trackID string) (StreamHandler, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	tracks, ok := r.streams[participantID]
+	if !ok {
+		return nil, false
+	}
+
+	h, ok := tracks[trackID]
+	if !ok {
+		return nil, false
+	}
+	return h, true
+}

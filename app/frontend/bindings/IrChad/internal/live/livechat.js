@@ -74,16 +74,6 @@ export function SetMicMuted(muted) {
 }
 
 /**
- * @param {$models.WindowData} w
- * @returns {$CancellablePromise<string>}
- */
-export function Thumbnail(w) {
-    return $Call.ByID(1514289829, w).then(/** @type {($result: any) => any} */(($result) => {
-        return $Create.ByteSlice($result);
-    }));
-}
-
-/**
  * @returns {$CancellablePromise<void>}
  */
 export function UnpublishMicrophone() {

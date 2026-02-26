@@ -113,7 +113,9 @@ import (
 	"unsafe"
 
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/pion/webrtc/v4/pkg/media"
 	"github.com/tinyzimmer/go-gst/gst"
+	"github.com/tinyzimmer/go-gst/gst/app"
 )
 
 // this and the CGO was made by Google Gemini
@@ -168,68 +170,25 @@ func GetWindows() ([]WindowData, error) {
 	return results, nil
 }
 
-func (w *WindowData) Thumbnail() ([]byte, error) {
-	cmd := exec.Command(
-		"ffmpeg",
-		"-y",
-		"-f", "x11grab",
-		"-video_size", fmt.Sprintf("%dx%d", w.W, w.H),
-		"-i", fmt.Sprintf(":0.0+%d,%d", w.X, w.Y),
-		"-frames:v", "1",
-		"-f", "image2",
-		"-vcodec", "mjpeg",
-		"pipe:1",
-	)
-
-	buf := bytes.Buffer{}
-	cmd.Stdout = &buf
-	err := cmd.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func NewScreenShare(w *WindowData, track *lksdk.LocalTrack, ss *ScreenShareOpts) (*GstTrackWriter, error) {
-	return NewGstScreenShare(w, track, ss)
-}
-
-func NewAppAudioShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter, error) {
-	return NewGstAppAudioShare(w, track)
-}
-
-func hasElement(name string) bool {
-	factory := gst.Find(name)
-	return factory != nil
-}
+// func hasElement(name string) bool {
+// 	factory := gst.Find(name)
+// 	return factory != nil
+// }
 
 func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
-	if hasElement("vah264enc") {
-		return fmt.Sprintf(
-			"ximagesrc xid=%d use-damage=0 ! "+
-				"videoconvert ! "+
-				"videoscale ! "+
-				"video/x-raw,format=NV12,width=%d,height=%d ! "+
-				// "vapostproc ! "+
-				"vah264enc bitrate=%d ! "+
-				"h264parse config-interval=-1 ! "+
-				"video/x-h264,stream-format=byte-stream,alignment=au ! "+
-				"appsink name=sink sync=false emit-signals=true drop=true max-buffers=1",
-			w.ID, w.W&^1, w.H&^1, ss.BitRate,
-		)
-	}
-
-	if hasElement("nvh264enc") {
-		return "nvh264enc"
-	}
-
-	return fmt.Sprintf("x264enc tune=zerolatency speed-preset=veryfast bitrate=%d key-int-max=%d", ss.BitRate, ss.FrameRate)
+	return fmt.Sprintf(
+		"ximagesrc xid=%d name=video_src use-damage=0 ! "+
+			"videoconvert ! "+
+			"videoscale add-borders=true ! "+
+			"video/x-raw,format=NV12,width=%d,height=%d,framerate=%d/1,pixel-aspect-ratio=1/1 ! "+
+			"vah264enc bitrate=%d ! "+
+			"h264parse config-interval=-1 ! "+
+			"video/x-h264,stream-format=byte-stream,alignment=au ! ",
+		w.ID, w.W&^1, w.H&^1, ss.FrameRate, ss.BitRate,
+	)
 }
 
 func NewGstScreenShare(w *WindowData, track *lksdk.LocalTrack, ss *ScreenShareOpts) (*GstTrackWriter, error) {
-	gst.Init(nil)
-
 	pipelineStr := preferredEncoder(w, ss)
 	log.Printf("selected encoder: %s\n", pipelineStr)
 
@@ -315,7 +274,6 @@ func listChildPIDs(parentPID uint) ([]uint, error) {
 }
 
 func NewGstAppAudioShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter, error) {
-	gst.Init(nil)
 	log.Printf("grabbing audio for window %+v\n", w)
 	nodeID, err := getPipewireNodeID(w.PID)
 	if err != nil {
@@ -347,4 +305,110 @@ func NewGstAppAudioShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWrite
 		nodeID,
 	)
 	return NewGstTrackWriter(track, pipelineStr, 20*time.Millisecond)
+}
+
+func huntPipeWireTarget(w *WindowData) (uint, error) {
+	nodeID, err := getPipewireNodeID(w.PID)
+	if err != nil {
+		log.Printf("no pipewire node for pid %d. searching child PIDs", w.PID)
+		childPIDs, err := listChildPIDs(w.PID)
+		if err != nil {
+			log.Printf("error looking up child PIDs for %d: %s", w.PID, err.Error())
+			return 0, err
+		}
+		for _, pid := range childPIDs {
+			childNodeID, err := getPipewireNodeID(pid)
+			if err != nil {
+				log.Printf("no pipewire node for child PID %d", childNodeID)
+				continue
+			}
+			nodeID = childNodeID
+			break
+		}
+	}
+
+	return nodeID, nil
+}
+
+func pushTrack(appSink *app.Sink, track *lksdk.LocalSampleTrack) {
+	sinkProp, err := appSink.GetProperty("name")
+	if err != nil {
+		log.Fatalf("sink has no name?")
+	}
+
+	name := sinkProp.(string)
+
+	for {
+		sample := appSink.PullSample()
+		if sample == nil {
+			if appSink.IsEOS() {
+				log.Printf("end of stream. track=%s sink=%s", track.ID(), name)
+				return
+			}
+			continue
+		}
+		buffer := sample.GetBuffer()
+		if buffer == nil {
+			continue
+		}
+
+		data := buffer.Bytes()
+		dur := buffer.Duration()
+
+		webrtcSample := media.Sample{
+			Data:     data,
+			Duration: dur,
+		}
+		if err := track.WriteSample(webrtcSample, nil); err != nil {
+			log.Printf("write sample error: %s", err.Error())
+			return
+		}
+		// log.Printf("wrote %d bytes to from sink %s to track %s", len(data), name, track.ID())
+	}
+}
+
+func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
+	videoEncoder := preferredEncoder(w, opts)
+	pwTarget, err := huntPipeWireTarget(w)
+	if err != nil {
+		return nil, err
+	}
+	pipelineStr := fmt.Sprintf(
+		"%s"+
+			"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 "+
+			"pipewiresrc target-object=%d ! "+
+			"audioconvert ! "+
+			"audioresample ! "+
+			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+
+			"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! "+
+			"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1",
+		videoEncoder, pwTarget,
+	)
+
+	pipeline, err := gst.NewPipelineFromString(pipelineStr)
+	if err != nil {
+		log.Fatalf("pipeline err: %s", err.Error())
+	}
+
+	videoElem, err := pipeline.GetElementByName("video_sink")
+	if err != nil {
+		log.Fatalf("videoBin.GetElements(): %s", err.Error())
+	}
+	videoSink := app.SinkFromElement(videoElem)
+
+	audioElem, err := pipeline.GetElementByName("audio_sink")
+	if err != nil {
+		log.Fatalf("audioBin.GetElements(): %s", err.Error())
+	}
+	audioSink := app.SinkFromElement(audioElem)
+
+	go pushTrack(videoSink, videoTrack)
+	go pushTrack(audioSink, audioTrack)
+
+	err = pipeline.SetState(gst.StatePlaying)
+	if err != nil {
+		return nil, err
+	}
+
+	return pipeline, nil
 }
