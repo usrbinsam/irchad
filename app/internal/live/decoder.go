@@ -84,19 +84,10 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	}
 	sink := app.SinkFromElement(sinkElem)
 
-	// block until pipeline is ready
 	err = pipeline.SetState(gst.StatePlaying)
 	if err != nil {
 		log.Fatalf("failed to set state: %s", err.Error())
 	}
-
-	// for {
-	// 	if st := pipeline.GetState(); st == gst.StateReady {
-	// 		break
-	// 	} else {
-	// 		log.Printf("sink state is %s", st)
-	// 	}
-	// }
 
 	return &AudioVideoDecoder{pipeline, audioSource, videoSource, sink}, nil
 }
@@ -132,26 +123,6 @@ func (d *AudioVideoDecoder) WriteAudioRTP(packet *rtp.Packet) error {
 	}
 
 	return nil
-}
-
-func (d *AudioVideoDecoder) Port() int {
-	elem, err := d.pipeline.GetElementByName("tcp_sink")
-	if err != nil {
-		return 0
-	}
-
-	prop, err := elem.GetProperty("current-port")
-	if err != nil {
-		log.Fatalf("tpcserversink has no current-port: %s", err.Error())
-	}
-
-	port, ok := prop.(int)
-
-	if !ok {
-		log.Fatalf("tcpserversink gave bad port # ")
-	}
-
-	return port
 }
 
 func (d *AudioVideoDecoder) Close() {
