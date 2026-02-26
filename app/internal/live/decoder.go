@@ -92,14 +92,6 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	return &AudioVideoDecoder{pipeline, audioSource, videoSource, sink}, nil
 }
 
-func (d *AudioVideoDecoder) SetAudioPayloadType(pt webrtc.PayloadType) {
-	d.audioSource.SetProperty("payload", pt)
-}
-
-func (d *AudioVideoDecoder) SetVideoPayloadType(pt webrtc.PayloadType) {
-	d.videoSource.SetProperty("payload", pt)
-}
-
 func (d *AudioVideoDecoder) WriteVideoSample(samp *media.Sample) error {
 	buffer := gst.NewBufferFromBytes(samp.Data)
 	buffer.SetDuration(samp.Duration)
@@ -151,7 +143,7 @@ func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.Remot
 	}
 
 	if track.Kind() == webrtc.RTPCodecTypeVideo {
-		dec.SetVideoPayloadType(track.PayloadType())
+		// dec.SetVideoPayloadType(track.PayloadType())
 
 		go func() {
 			for {
@@ -189,7 +181,7 @@ func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.Remot
 			ev,
 		)
 	} else if track.Kind() == webrtc.RTPCodecTypeAudio {
-		dec.SetAudioPayloadType(track.PayloadType())
+		// dec.SetAudioPayloadType(track.PayloadType())
 		go func() {
 			for {
 				packet, _, err := track.ReadRTP()
