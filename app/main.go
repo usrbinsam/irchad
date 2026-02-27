@@ -7,7 +7,7 @@ import (
 
 	"IrChad/internal/live"
 
-	"github.com/tinyzimmer/go-gst/gst"
+	"github.com/go-gst/go-gst/gst"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 

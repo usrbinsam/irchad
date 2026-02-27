@@ -6,14 +6,14 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/go-gst/go-gst/gst"
+	"github.com/go-gst/go-gst/gst/app"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
 	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
-	"github.com/tinyzimmer/go-gst/gst"
-	"github.com/tinyzimmer/go-gst/gst/app"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -123,7 +123,7 @@ func (d *AudioVideoDecoder) pliCallback(pad *gst.Pad, info *gst.PadProbeInfo) gs
 
 func (d *AudioVideoDecoder) WriteVideoSample(samp *media.Sample) error {
 	buffer := gst.NewBufferFromBytes(samp.Data)
-	buffer.SetDuration(samp.Duration)
+	buffer.SetDuration(gst.ClockTime(samp.Duration))
 	flowReturn := d.videoSource.PushBuffer(buffer)
 	if flowReturn != gst.FlowOK {
 		return fmt.Errorf("video_src push failed with %s", flowReturn)
@@ -359,7 +359,7 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 				}
 
 				buffer := gst.NewBufferFromBytes(sample.Data)
-				buffer.SetDuration(sample.Duration)
+				buffer.SetDuration(gst.ClockTime(sample.Duration))
 				if src.PushBuffer(buffer) != gst.FlowOK {
 					break
 				}

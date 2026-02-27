@@ -5,10 +5,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-gst/go-gst/gst"
+	"github.com/go-gst/go-gst/gst/app"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4/pkg/media"
-	"github.com/tinyzimmer/go-gst/gst"
-	"github.com/tinyzimmer/go-gst/gst/app"
 )
 
 func NewGstTrackWriter(track *lksdk.LocalTrack, plstr string, duration time.Duration) (*GstTrackWriter, error) {

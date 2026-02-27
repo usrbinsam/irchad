@@ -7,11 +7,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-gst/go-gst/gst"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4"
-	"github.com/tinyzimmer/go-gst/gst"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 

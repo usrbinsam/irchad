@@ -3,11 +3,11 @@ module IrChad
 go 1.25.0
 
 require (
+	github.com/go-gst/go-gst v1.4.0
 	github.com/livekit/protocol v1.44.1-0.20260120134243-0914cc74653e
 	github.com/livekit/server-sdk-go/v2 v2.13.3
 	github.com/pion/rtp v1.10.1
 	github.com/pion/webrtc/v4 v4.2.9
-	github.com/tinyzimmer/go-gst v0.2.33
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.72
 )
 
@@ -37,6 +37,7 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.8.0 // indirect
 	github.com/go-git/go-git/v5 v5.17.0 // indirect
+	github.com/go-gst/go-glib v1.4.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -89,7 +90,6 @@ require (
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
-	github.com/tinyzimmer/go-glib v0.0.25 // indirect
 	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
 	github.com/wailsapp/go-webview2 v1.0.23 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect

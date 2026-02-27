@@ -112,10 +112,10 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/go-gst/go-gst/gst"
+	"github.com/go-gst/go-gst/gst/app"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4/pkg/media"
-	"github.com/tinyzimmer/go-gst/gst"
-	"github.com/tinyzimmer/go-gst/gst/app"
 )
 
 // this and the CGO was made by Google Gemini
@@ -353,11 +353,11 @@ func pushTrack(appSink *app.Sink, track *lksdk.LocalSampleTrack) {
 		}
 
 		data := buffer.Bytes()
-		dur := buffer.Duration()
+		dur := buffer.Duration().AsDuration()
 
 		webrtcSample := media.Sample{
 			Data:     data,
-			Duration: dur,
+			Duration: *dur,
 		}
 		if err := track.WriteSample(webrtcSample, nil); err != nil {
 			log.Printf("write sample error: %s", err.Error())
