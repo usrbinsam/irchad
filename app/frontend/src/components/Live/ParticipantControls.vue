@@ -22,11 +22,11 @@ async function setVolume() {
           color="primary"
           :max="2"
           :min="0"
-          :step="0.1"
+          :step="0.01"
           @update:modelValue="setVolume"
           v-model="volume"
         >
-          <template #append> {{ volume }} </template>
+          <template #append> {{ (volume * 100).toFixed(0) }}% </template>
         </v-slider>
       </v-list-item>
     </v-list>
