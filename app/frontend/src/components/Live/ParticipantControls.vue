@@ -2,12 +2,15 @@
 import { SetParticipantVolume } from "@/bindings/IrChad/internal/live/livechat";
 const props = defineProps<{ identity: string }>();
 
-const volume = ref(1.0);
+const volume = ref(100);
 
-async function setVolume() {
+async function setVolume(v: number) {
   try {
-    console.log(volume.value);
-    await SetParticipantVolume(props.identity, volume.value);
+    let f = 0;
+    if (v) {
+      f = v / 100;
+    }
+    await SetParticipantVolume(props.identity, f);
   } catch (e) {}
 }
 </script>
@@ -20,13 +23,13 @@ async function setVolume() {
           label="Volume"
           density="compact"
           color="primary"
-          :max="2"
+          :max="200"
           :min="0"
-          :step="0.01"
+          :step="1"
           @update:modelValue="setVolume"
           v-model="volume"
         >
-          <template #append> {{ (volume * 100).toFixed(0) }}% </template>
+          <template #append> {{ volume }}% </template>
         </v-slider>
       </v-list-item>
     </v-list>
