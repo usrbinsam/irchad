@@ -9,6 +9,7 @@ import {
   GetWindows,
   PublishScreenShare,
   UnpublishScreenShare,
+  SetMicMuted,
 } from "@/bindings/IrChad/internal/live/livechat";
 import { useAccountStore } from "@/stores/accountStore";
 import type { ScreenShareOpts } from "@/bindings/IrChad/internal/live";
@@ -77,6 +78,7 @@ export async function connect(channel: string) {
   const accountStore = useAccountStore();
 
   await Connect(accountStore.account.nick, channel);
+  await publishMic();
   playConnectionChime();
   useLiveStore().setConnected(channel);
 }
@@ -122,4 +124,9 @@ export async function shareWindow(id: number, opts: ScreenShareOpts) {
 export async function unpublishScreenShare() {
   await UnpublishScreenShare();
   useLiveStore().screenShareEnabled = false;
+}
+
+export async function setMuted(muted: boolean) {
+  await SetMicMuted(muted);
+  useLiveStore().micEnabled = !muted;
 }

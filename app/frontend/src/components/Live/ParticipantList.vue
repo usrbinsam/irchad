@@ -40,7 +40,7 @@ const sortedList = computed(() => {
     speaking: false,
     webcam: liveStore.camEnabled,
     streaming: liveStore.screenShareEnabled,
-    muted: liveStore.micEnabled,
+    muted: !liveStore.micEnabled,
   });
 
   out.sort((a, b) => a.identity.localeCompare(b.identity));

@@ -29,13 +29,9 @@ type LiveChat struct {
 	registry      *StreamRegistry
 	decoderServer *httpServer // provides decoded video/audio streams when connected to a room
 
-	microphone    io.Closer
-	microphonePub *lksdk.LocalTrackPublication
-
-	camera    io.Closer
-	cameraPub *lksdk.LocalTrackPublication
-
-	screen *gst.Pipeline
+	microphone io.Closer
+	camera     io.Closer
+	screen     *gst.Pipeline
 }
 
 func (l *LiveChat) getToken(identity, room string) (string, error) {
@@ -194,7 +190,7 @@ func (l *LiveChat) PublishMicrophone() error {
 		return err
 	}
 
-	pub, err := l.room.LocalParticipant.PublishTrack(
+	_, err = l.room.LocalParticipant.PublishTrack(
 		track,
 		&lksdk.TrackPublicationOptions{
 			Name:   "mic",
@@ -208,7 +204,6 @@ func (l *LiveChat) PublishMicrophone() error {
 	}
 
 	l.microphone = microphone
-	l.microphonePub = pub
 
 	return nil
 }
@@ -224,7 +219,8 @@ func (l *LiveChat) UnpublishMicrophone() {
 		return
 	}
 
-	err = l.room.LocalParticipant.UnpublishTrack(l.microphonePub.SID())
+	pub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_MICROPHONE)
+	err = l.room.LocalParticipant.UnpublishTrack(pub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish microphone track: %s\n", err.Error())
 		return
@@ -243,11 +239,11 @@ func (l *LiveChat) UnpublishWebcam() {
 		return
 	}
 
-	if err := l.room.LocalParticipant.UnpublishTrack(l.cameraPub.SID()); err != nil {
+	pub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_CAMERA)
+	if err := l.room.LocalParticipant.UnpublishTrack(pub.SID()); err != nil {
 		log.Printf("failed to unpublish camera track: %s", err.Error())
 	}
 
-	l.cameraPub = nil
 	l.camera = nil
 }
 
@@ -274,7 +270,7 @@ func (l *LiveChat) PublishWebcam() error {
 		return err
 	}
 
-	pub, err := l.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+	_, err = l.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
 		Name:   "cam",
 		Source: livekit.TrackSource_CAMERA,
 	})
@@ -284,12 +280,14 @@ func (l *LiveChat) PublishWebcam() error {
 	}
 
 	l.camera = cam
-	l.cameraPub = pub
 	return nil
 }
 
 func (l *LiveChat) SetMicMuted(muted bool) {
-	l.microphonePub.SetMuted(muted)
+	log.Println("set muted")
+	pub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_MICROPHONE)
+	mic := pub.(*lksdk.LocalTrackPublication)
+	mic.SetMuted(muted)
 }
 
 func (l *LiveChat) onTrackSubscribed(

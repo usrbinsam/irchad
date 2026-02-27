@@ -2,10 +2,10 @@
 import { useLiveStore } from "@/stores/liveStore";
 import {
   disconnect,
-  publishMic,
   publishCamera,
   unpublishCamera,
   unpublishScreenShare,
+  setMuted,
 } from "@/live/liveProxy";
 
 const liveStore = useLiveStore();
@@ -32,6 +32,7 @@ const { screenShareDialog } = storeToRefs(liveStore);
           icon="mdi-microphone"
           v-if="liveStore.micEnabled"
           variant="text"
+          @click="setMuted(true)"
         />
 
         <v-btn
@@ -40,7 +41,7 @@ const { screenShareDialog } = storeToRefs(liveStore);
           v-else
           variant="text"
           color="error"
-          @click="publishMic"
+          @click="setMuted(false)"
         />
 
         <v-btn
