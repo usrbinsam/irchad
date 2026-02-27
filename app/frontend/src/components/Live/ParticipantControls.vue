@@ -5,13 +5,11 @@ const props = defineProps<{ identity: string }>();
 const volume = ref(100);
 
 async function setVolume(v: number) {
-  try {
-    let f = 0;
-    if (v) {
-      f = v / 100;
-    }
-    await SetParticipantVolume(props.identity, f);
-  } catch (e) {}
+  let f = 0;
+  if (v) {
+    f = v / 100;
+  }
+  await SetParticipantVolume(props.identity, f);
 }
 </script>
 <template>
