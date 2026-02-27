@@ -284,7 +284,6 @@ func (l *LiveChat) PublishWebcam() error {
 }
 
 func (l *LiveChat) SetMicMuted(muted bool) {
-	log.Println("set muted")
 	pub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_MICROPHONE)
 	mic := pub.(*lksdk.LocalTrackPublication)
 	mic.SetMuted(muted)
