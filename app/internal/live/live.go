@@ -233,14 +233,14 @@ func (l *LiveChat) UnpublishWebcam() {
 		return
 	}
 
-	if err := l.camera.Close(); err != nil {
-		log.Printf("failed to close camera stream: %s", err.Error())
-		return
-	}
-
 	pub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_CAMERA)
 	if err := l.room.LocalParticipant.UnpublishTrack(pub.SID()); err != nil {
 		log.Printf("failed to unpublish camera track: %s", err.Error())
+	}
+
+	if err := l.camera.Close(); err != nil {
+		log.Printf("failed to close camera stream: %s", err.Error())
+		return
 	}
 
 	l.camera = nil
