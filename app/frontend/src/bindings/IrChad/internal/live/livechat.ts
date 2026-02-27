@@ -43,10 +43,8 @@ export function SetMicMuted(muted: boolean): $CancellablePromise<void> {
     return $Call.ByName("IrChad/internal/live.LiveChat.SetMicMuted", muted);
 }
 
-export function Thumbnail(w: $models.WindowData): $CancellablePromise<string> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.Thumbnail", w).then(($result: any) => {
-        return $Create.ByteSlice($result);
-    });
+export function SetParticipantVolume(participantID: string, vol: number): $CancellablePromise<void> {
+    return $Call.ByName("IrChad/internal/live.LiveChat.SetParticipantVolume", participantID, vol);
 }
 
 export function UnpublishMicrophone(): $CancellablePromise<void> {

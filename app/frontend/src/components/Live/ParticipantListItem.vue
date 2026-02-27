@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import ParticipantControls from "./ParticipantControls.vue";
+
 const props = defineProps<{
   identity: string;
   avatar?: string;
@@ -24,6 +26,7 @@ const props = defineProps<{
       v-if="streaming"
       >LIVE</v-chip
     >
+    <participant-controls v-bind="props" />
   </div>
 </template>
 

@@ -315,6 +315,7 @@ func (l *LiveChat) onTrackSubscribed(
 
 	case webrtc.RTPCodecTypeAudio:
 		l.decodeAudioStream(track, publication, rp)
+		return
 	}
 
 	ev := ParticipantTrackPublished{

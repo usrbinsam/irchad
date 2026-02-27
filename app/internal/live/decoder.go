@@ -150,7 +150,10 @@ func (d *AudioVideoDecoder) Close() {
 	d.pipeline.SetState(gst.StateNull)
 }
 
-const ScreenShareRegistryKey = "SCREEN_SHARE"
+const (
+	ScreenShareRegistryKey = "SCREEN_SHARE"
+	MicrophoneRegistryKey  = "MICROPHONE"
+)
 
 func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	var dec *AudioVideoDecoder
@@ -370,9 +373,11 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 }
 
 type AudioDecoder struct {
+	ID       string
 	pipeline *gst.Pipeline
 	src      *app.Source
 	track    *webrtc.TrackRemote
+	volume   *gst.Element
 }
 
 func (ad *AudioDecoder) DecodeStream() {
@@ -401,13 +406,18 @@ func (ad *AudioDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func NewAudioDecoder(track *webrtc.TrackRemote) (*AudioDecoder, error) {
+func NewAudioDecoder(ID string, track *webrtc.TrackRemote) (*AudioDecoder, error) {
 	pipelineStr := `
-	  appsrc name=src do-timestamp=true format=time caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
-	  rtpjitterbuffer latency=50 !
+	  appsrc 
+	  	name=src 
+			do-timestamp=true 
+	    format=time 
+	    caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
+	  rtpjitterbuffer !
 	  rtpopusdepay !
 		opusdec !
 	  audioconvert !
+	  volume name=vol volume=1.0 !
 	  audioresample !
 		autoaudiosink sync=false
 	`
@@ -422,11 +432,31 @@ func NewAudioDecoder(track *webrtc.TrackRemote) (*AudioDecoder, error) {
 	}
 	src := app.SrcFromElement(sourceElem)
 
+	volumeElem, err := pipeline.GetElementByName("vol")
+	if err != nil {
+		log.Fatalf("no volume element: %s", err.Error())
+	}
+
 	return &AudioDecoder{
 		pipeline: pipeline,
 		src:      src,
 		track:    track,
+		volume:   volumeElem,
 	}, nil
+}
+
+func (ad *AudioDecoder) SetVolume(vol float64) error {
+	if vol < 0.0 || vol >= 2.0 {
+		return fmt.Errorf("volume must be between 0 and 200")
+	}
+
+	err := ad.volume.SetProperty("volume", vol)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("set user volume to %f", vol)
+	return nil
 }
 
 func (ad *AudioDecoder) Close() {
@@ -438,10 +468,10 @@ func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 	trackID := track.ID()
 
 	log.Printf("decoding audio track from %s: %s %s", rp.Identity(), pub.Name(), pub.Source())
-	dec, err := NewAudioDecoder(track)
+	dec, err := NewAudioDecoder(rp.Identity(), track)
 	l.registry.Add(
 		participantID,
-		trackID,
+		MicrophoneRegistryKey,
 		dec,
 	)
 	if err != nil {
@@ -453,4 +483,14 @@ func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 		log.Printf("decoding ended for %s: %s %s", rp.Identity(), pub.Name(), pub.Source())
 		l.registry.Remove(participantID, trackID)
 	}()
+}
+
+func (l *LiveChat) SetParticipantVolume(participantID string, vol float64) error {
+	handler, ok := l.registry.Get(participantID, MicrophoneRegistryKey)
+	if !ok {
+		return fmt.Errorf("participant or track not found")
+	}
+
+	decoder := handler.(*AudioDecoder)
+	return decoder.SetVolume(vol)
 }

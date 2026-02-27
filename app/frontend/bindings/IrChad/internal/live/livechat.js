@@ -74,6 +74,15 @@ export function SetMicMuted(muted) {
 }
 
 /**
+ * @param {string} participantID
+ * @param {number} vol
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetParticipantVolume(participantID, vol) {
+    return $Call.ByID(298078976, participantID, vol);
+}
+
+/**
  * @returns {$CancellablePromise<void>}
  */
 export function UnpublishMicrophone() {
