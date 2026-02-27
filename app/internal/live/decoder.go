@@ -372,32 +372,23 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 type AudioDecoder struct {
 	pipeline *gst.Pipeline
 	src      *app.Source
-	sink     *app.Sink
 	track    *webrtc.TrackRemote
-}
-
-type trackReader struct {
-	track *webrtc.TrackRemote
-}
-
-func (t *trackReader) Read(p []byte) (n int, err error) {
-	n, _, err = t.track.Read(p)
-	return n, err
 }
 
 func (ad *AudioDecoder) DecodeStream() {
 	err := ad.pipeline.SetState(gst.StatePlaying)
 	if err != nil {
-		log.Printf("failed to start audio decoder pipeline: %s", err.Error())
 		return
 	}
 
-	reader := trackReader{ad.track}
+	packetBuffer := make([]byte, 1500)
 	for {
-		buf, err := gst.NewBufferFromReader(&reader)
+		n, _, err := ad.track.Read(packetBuffer)
 		if err != nil {
 			break
 		}
+
+		buf := gst.NewBufferFromBytes(packetBuffer[:n])
 		flow := ad.src.PushBuffer(buf)
 		if flow != gst.FlowOK {
 			break
@@ -406,31 +397,8 @@ func (ad *AudioDecoder) DecodeStream() {
 }
 
 func (ad *AudioDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println("new ogg stream opened")
-	w.Header().Set("content-type", "audio/ogg")
-	w.Header().Set("connection", "keep-alive")
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-
-	flusher := w.(http.Flusher)
-	w.WriteHeader(http.StatusOK)
-	flusher.Flush()
-
-	for {
-		sample := ad.sink.PullSample()
-		if sample == nil {
-			if ad.sink.IsEOS() {
-				return
-			}
-
-			continue
-		}
-		_, err := w.Write(sample.GetBuffer().Bytes())
-		if err != nil {
-			log.Printf("error writing webm to browser: %s", err.Error())
-			return
-		}
-		flusher.Flush()
-	}
+	// AudioDecoder plays direct to the sound system
+	http.NotFound(w, r)
 }
 
 func NewAudioDecoder(track *webrtc.TrackRemote) (*AudioDecoder, error) {
@@ -438,21 +406,15 @@ func NewAudioDecoder(track *webrtc.TrackRemote) (*AudioDecoder, error) {
 	  appsrc name=src do-timestamp=true format=time caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
 	  rtpjitterbuffer latency=50 !
 	  rtpopusdepay !
-	  opusparse !
-	  oggmux ! 
-		appsink name=sink sync=false emit-signals=true drop=false
+		opusdec !
+	  audioconvert !
+	  audioresample !
+		autoaudiosink sync=false
 	`
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)
 	if err != nil {
 		log.Fatalf("NewAudioDecoder: invalid gst pipeline: %s", err.Error())
 	}
-
-	sinkElem, err := pipeline.GetElementByName("sink")
-	if err != nil {
-		log.Fatalf("no audio sink: %s", err.Error())
-	}
-
-	sink := app.SinkFromElement(sinkElem)
 
 	sourceElem, err := pipeline.GetElementByName("src")
 	if err != nil {
@@ -462,7 +424,6 @@ func NewAudioDecoder(track *webrtc.TrackRemote) (*AudioDecoder, error) {
 
 	return &AudioDecoder{
 		pipeline: pipeline,
-		sink:     sink,
 		src:      src,
 		track:    track,
 	}, nil
