@@ -3,16 +3,24 @@
 Contributions are welcome, there is a LOT to do.
 See [Issues](https://github.com/usrbinsam/irchad/issues).
 
+## Dependencies
+
 You will need:
+
+> [!IMPORTANT]
+> Windows development will have an easier time
+> installing dependencies via MSYS2, rather than
+> manually installing (except Docker).
 
 - [Go](https://go.dev/doc/install)
 - [Wails v3](https://v3alpha.wails.io/)
 - [Node 24](https://nodejs.org/en/download) (using something like [fnm](https://github.com/Schniz/fnm) is recommended)
 - [npm](https://npmjs.org/)
-- [Docker](https://docs.docker.com/get-started/get-docker/) (or something to run
-  containers)
+- [Docker](https://docs.docker.com/get-started/get-docker/) (or something to run containers)
 - [Task](https://taskfile.dev/)
-- [GStreamer](https://gstreamer.freedesktop.org/) (for MinGW for Windows)
+- [GStreamer](https://gstreamer.freedesktop.org/)
+
+## Setup
 
 1. Rename `ircd.test.yaml` -> `ircd.yaml`
 2. Start Ergo and LiveKit Server with `docker compose up -d`
@@ -22,7 +30,6 @@ You will need:
 ## Windows
 
 If you're developing on Windows, you'll need some extra dependencies.
-You don't need to do this just to run IrChad.
 
 - Install [MSYS2](https://www.msys2.org/)
 - Launch the "MSYS2 MINGW64" terminal (the blue one)
@@ -65,7 +72,7 @@ source ~/.bashrc
   - `npm -v`
   - `wails3 doctor`
 
-- Get started with `wails3 dev` in the `app/` folder
+- Go to step 1 in [Setup](#setup).
 
 ## Useful links
 
