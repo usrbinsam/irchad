@@ -11,7 +11,6 @@ import (
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
-	"github.com/pion/webrtc/v4/pkg/media/oggwriter"
 	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
 	"github.com/tinyzimmer/go-gst/gst"
 	"github.com/tinyzimmer/go-gst/gst/app"
@@ -52,7 +51,7 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 		mux.
 
 	  appsrc name=audio_src do-timestamp=true format=time caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
-	  rtpjitterbuffer !
+	  rtpjitterbuffer latency=50 !
 	  rtpopusdepay !
 	  opusparse !
 	  queue !
@@ -370,37 +369,126 @@ func (l *LiveChat) decodeVideoStream(track *webrtc.TrackRemote, pub *lksdk.Remot
 	return vStream, nil
 }
 
-func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
-	stream := &OpusStream{}
+type AudioDecoder struct {
+	pipeline *gst.Pipeline
+	src      *app.Source
+	sink     *app.Sink
+	track    *webrtc.TrackRemote
+}
 
+type trackReader struct {
+	track *webrtc.TrackRemote
+}
+
+func (t *trackReader) Read(p []byte) (n int, err error) {
+	n, _, err = t.track.Read(p)
+	return n, err
+}
+
+func (ad *AudioDecoder) DecodeStream() {
+	err := ad.pipeline.SetState(gst.StatePlaying)
+	if err != nil {
+		log.Printf("failed to start audio decoder pipeline: %s", err.Error())
+		return
+	}
+
+	reader := trackReader{ad.track}
+	for {
+		buf, err := gst.NewBufferFromReader(&reader)
+		if err != nil {
+			break
+		}
+		flow := ad.src.PushBuffer(buf)
+		if flow != gst.FlowOK {
+			break
+		}
+	}
+}
+
+func (ad *AudioDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Println("new ogg stream opened")
+	w.Header().Set("content-type", "audio/ogg")
+	w.Header().Set("connection", "keep-alive")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+
+	flusher := w.(http.Flusher)
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	for {
+		sample := ad.sink.PullSample()
+		if sample == nil {
+			if ad.sink.IsEOS() {
+				return
+			}
+
+			continue
+		}
+		_, err := w.Write(sample.GetBuffer().Bytes())
+		if err != nil {
+			log.Printf("error writing webm to browser: %s", err.Error())
+			return
+		}
+		flusher.Flush()
+	}
+}
+
+func NewAudioDecoder(track *webrtc.TrackRemote) (*AudioDecoder, error) {
+	pipelineStr := `
+	  appsrc name=src do-timestamp=true format=time caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
+	  rtpjitterbuffer latency=50 !
+	  rtpopusdepay !
+	  opusparse !
+	  oggmux ! 
+		appsink name=sink sync=false emit-signals=true drop=false
+	`
+	pipeline, err := gst.NewPipelineFromString(pipelineStr)
+	if err != nil {
+		log.Fatalf("NewAudioDecoder: invalid gst pipeline: %s", err.Error())
+	}
+
+	sinkElem, err := pipeline.GetElementByName("sink")
+	if err != nil {
+		log.Fatalf("no audio sink: %s", err.Error())
+	}
+
+	sink := app.SinkFromElement(sinkElem)
+
+	sourceElem, err := pipeline.GetElementByName("src")
+	if err != nil {
+		log.Fatalf("no audio source: %s", err.Error())
+	}
+	src := app.SrcFromElement(sourceElem)
+
+	return &AudioDecoder{
+		pipeline: pipeline,
+		sink:     sink,
+		src:      src,
+		track:    track,
+	}, nil
+}
+
+func (ad *AudioDecoder) Close() {
+	ad.pipeline.SetState(gst.StateNull)
+}
+
+func (l *LiveChat) decodeAudioStream(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	participantID := rp.Identity()
 	trackID := track.ID()
 
 	log.Printf("decoding audio track from %s: %s %s", rp.Identity(), pub.Name(), pub.Source())
+	dec, err := NewAudioDecoder(track)
 	l.registry.Add(
 		participantID,
 		trackID,
-		&AudioTrackHandler{stream: stream},
+		dec,
 	)
+	if err != nil {
+		log.Printf("NewAudioDecoder() error: %s", err.Error())
+		return
+	}
 	go func() {
-		ogg, err := oggwriter.NewWith(stream, 48000, track.Codec().Channels)
-		if err != nil {
-			log.Printf("ogg writer error: %s", err.Error())
-			return
-		}
-		defer ogg.Close()
-
-		for {
-			packet, _, err := track.ReadRTP()
-			if err != nil {
-				break
-			}
-
-			if err := ogg.WriteRTP(packet); err != nil {
-				break
-			}
-		}
-
+		dec.DecodeStream()
 		log.Printf("decoding ended for %s: %s %s", rp.Identity(), pub.Name(), pub.Source())
 		l.registry.Remove(participantID, trackID)
 	}()
