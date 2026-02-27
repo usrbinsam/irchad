@@ -35,10 +35,7 @@ type LiveChat struct {
 	camera    io.Closer
 	cameraPub *lksdk.LocalTrackPublication
 
-	screen    *gst.Pipeline
-	screenPub *lksdk.LocalTrackPublication
-
-	screenAudioPub *lksdk.LocalTrackPublication
+	screen *gst.Pipeline
 }
 
 func (l *LiveChat) getToken(identity, room string) (string, error) {
@@ -352,20 +349,31 @@ func (l *LiveChat) UnpublishScreenShare() {
 	if l.screen == nil {
 		return
 	}
-	err := l.screen.SetState(gst.StateNull)
+
+	// screen share publication
+	videoPub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_SCREEN_SHARE)
+	log.Printf("video pub: %+v", videoPub)
+	err := l.room.LocalParticipant.UnpublishTrack(videoPub.SID())
+	if err != nil {
+		log.Printf("failed to unpublish screen video track: %s", err.Error())
+		return
+	}
+
+	// audio publication
+	audioPub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_SCREEN_SHARE_AUDIO)
+	err = l.room.LocalParticipant.UnpublishTrack(audioPub.SID())
+	if err != nil {
+		log.Printf("failed to unpublish screen audio track: %s", err.Error())
+		return
+	}
+	// stop pipeline
+	err = l.screen.SetState(gst.StateNull)
 	if err != nil {
 		log.Printf("failed to stop screen share: %s", err.Error())
 		return
 	}
 	l.screen = nil
-
-	err = l.room.LocalParticipant.UnpublishTrack(l.screenAudioPub.SID())
-	if err != nil {
-		log.Printf("failed to unpublish screen share track: %s", err.Error())
-		return
-	}
-	l.screenAudioPub = nil
-	application.Get().Event.Emit(EventScreenShareClosed)
+	application.Get().Event.Emit(EventScreenShareClosed, ScreenShareClosed{})
 }
 
 func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
@@ -415,7 +423,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		return err
 	}
 
-	videoPub, err := l.room.LocalParticipant.PublishTrack(
+	_, err = l.room.LocalParticipant.PublishTrack(
 		videoTrack,
 		&lksdk.TrackPublicationOptions{
 			Name:   w.Title,
@@ -428,9 +436,8 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 	}
 
 	l.screen = screenShare
-	l.screenPub = videoPub
 
-	audioPub, err := l.room.LocalParticipant.PublishTrack(
+	_, err = l.room.LocalParticipant.PublishTrack(
 		audioTrack,
 		&lksdk.TrackPublicationOptions{
 			Name:   w.Title,
@@ -442,7 +449,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		return err
 	}
 
-	l.screenAudioPub = audioPub
+	// l.screenAudioPub = audioPub
 
 	return nil
 }

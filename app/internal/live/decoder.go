@@ -21,10 +21,11 @@ import (
 const maxVideoLate = 1024
 
 type AudioVideoDecoder struct {
-	pipeline    *gst.Pipeline
-	audioSource *app.Source
-	videoSource *app.Source
-	sink        *app.Sink
+	pipeline      *gst.Pipeline
+	audioSource   *app.Source
+	videoSource   *app.Source
+	sink          *app.Sink
+	pliWriterFunc func()
 }
 
 func (d *AudioVideoDecoder) WriteVideoRTP(packet *rtp.Packet) error {
@@ -89,7 +90,36 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 		log.Fatalf("failed to set state: %s", err.Error())
 	}
 
-	return &AudioVideoDecoder{pipeline, audioSource, videoSource, sink}, nil
+	srcPad := videoElem.GetStaticPad("src")
+	if srcPad == nil {
+		log.Fatalf("video_src has no src pad")
+	}
+
+	dec := &AudioVideoDecoder{pipeline, audioSource, videoSource, sink, func() { panic("PLI writer func not set") }}
+	srcPad.AddProbe(
+		gst.PadProbeTypeEventUpstream,
+		dec.pliCallback,
+	)
+
+	return dec, nil
+}
+
+func (d *AudioVideoDecoder) SetPLIWriter(pliWriterFunc func()) {
+	d.pliWriterFunc = pliWriterFunc
+}
+
+func (d *AudioVideoDecoder) pliCallback(pad *gst.Pad, info *gst.PadProbeInfo) gst.PadProbeReturn {
+	event := info.GetEvent()
+	if event.Type() != gst.EventTypeCustomUpstream {
+		return gst.PadProbeOK
+	}
+
+	if event.GetStructure() != nil && event.GetStructure().Name() == "GstForceKeyUnit" {
+		log.Println("GStreamer wants a keyframe")
+		d.pliWriterFunc()
+	}
+
+	return gst.PadProbeOK
 }
 
 func (d *AudioVideoDecoder) WriteVideoSample(samp *media.Sample) error {
@@ -144,6 +174,7 @@ func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.Remot
 
 	if track.Kind() == webrtc.RTPCodecTypeVideo {
 		// dec.SetVideoPayloadType(track.PayloadType())
+		dec.SetPLIWriter(func() { rp.WritePLI(track.SSRC()) })
 
 		go func() {
 			for {
