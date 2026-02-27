@@ -8,9 +8,7 @@ async function setVolume() {
   try {
     console.log(volume.value);
     await SetParticipantVolume(props.identity, volume.value);
-  } catch (e) {
-    alert(e);
-  }
+  } catch (e) {}
 }
 </script>
 <template>
@@ -22,12 +20,14 @@ async function setVolume() {
           label="Volume"
           density="compact"
           color="primary"
-          :max="1"
+          :max="2"
           :min="0"
           :step="0.1"
           @update:modelValue="setVolume"
           v-model="volume"
-        />
+        >
+          <template #append> {{ volume }} </template>
+        </v-slider>
       </v-list-item>
     </v-list>
   </v-menu>
