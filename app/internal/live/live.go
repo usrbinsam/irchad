@@ -213,19 +213,18 @@ func (l *LiveChat) UnpublishMicrophone() {
 		return
 	}
 
-	err := l.microphone.Close()
-	if err != nil {
-		log.Printf("failed to stop microphone: %s\n", err.Error())
-		return
-	}
-
 	pub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_MICROPHONE)
-	err = l.room.LocalParticipant.UnpublishTrack(pub.SID())
+	err := l.room.LocalParticipant.UnpublishTrack(pub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish microphone track: %s\n", err.Error())
 		return
 	}
 
+	err = l.microphone.Close()
+	if err != nil {
+		log.Printf("failed to stop microphone: %s\n", err.Error())
+		return
+	}
 	l.microphone = nil
 }
 
