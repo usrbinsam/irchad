@@ -6,7 +6,8 @@ export {
     LiveChat
 };
 
-export {
+export type {
+    FrameRate,
     ParticipantConnected,
     ParticipantDisconnected,
     ParticipantTrackPublished,
@@ -14,8 +15,4 @@ export {
     ScreenShareClosed,
     ScreenShareOpts,
     WindowData
-} from "./models.js";
-
-export type {
-    FrameRate
 } from "./models.js";

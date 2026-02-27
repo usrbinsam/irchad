@@ -3,62 +3,56 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
 export function Connect(nick: string, channelName: string): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.Connect", nick, channelName);
+    return $Call.ByID(1257987059, nick, channelName);
 }
 
 export function Connected(): $CancellablePromise<boolean> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.Connected");
+    return $Call.ByID(2850702642);
 }
 
 export function Disconnect(): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.Disconnect");
+    return $Call.ByID(4255897781);
 }
 
-export function GetWindows(): $CancellablePromise<$models.WindowData[]> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.GetWindows").then(($result: any) => {
-        return $$createType1($result);
-    });
+export function GetWindows(): $CancellablePromise<$models.WindowData[] | null> {
+    return $Call.ByID(4015795614);
 }
 
 export function PublishMicrophone(): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.PublishMicrophone");
+    return $Call.ByID(762739442);
 }
 
 export function PublishScreenShare(ID: number, ss: $models.ScreenShareOpts): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.PublishScreenShare", ID, ss);
+    return $Call.ByID(2179788497, ID, ss);
 }
 
 export function PublishWebcam(): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.PublishWebcam");
+    return $Call.ByID(2617723007);
 }
 
 export function SetMicMuted(muted: boolean): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.SetMicMuted", muted);
+    return $Call.ByID(1982595911, muted);
 }
 
 export function SetParticipantVolume(participantID: string, vol: number): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.SetParticipantVolume", participantID, vol);
+    return $Call.ByID(298078976, participantID, vol);
 }
 
 export function UnpublishMicrophone(): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishMicrophone");
+    return $Call.ByID(937473251);
 }
 
 export function UnpublishScreenShare(): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishScreenShare");
+    return $Call.ByID(2171747118);
 }
 
 export function UnpublishWebcam(): $CancellablePromise<void> {
-    return $Call.ByName("IrChad/internal/live.LiveChat.UnpublishWebcam");
+    return $Call.ByID(1463901962);
 }
-
-// Private type creation functions
-const $$createType0 = $models.WindowData.createFrom;
-const $$createType1 = $Create.Array($$createType0);
