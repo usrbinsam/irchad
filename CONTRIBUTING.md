@@ -53,7 +53,13 @@ pacman -S --needed \
   mingw-w64-x86_64-nodejs
 ```
 
-- Add add `$GOPATH/bin` to the MSYS2 path
+- Add add `$GOPATH/bin` to the MSYS2 path:
+
+```sh
+echo 'export PATH="$PATH:$GOPATH/bin"' >> ~/.bashrc
+source ~/.bashrc
+```
+
 - Do a little health check:
   - `node -v`
   - `npm -v`
