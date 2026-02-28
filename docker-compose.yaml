@@ -1,6 +1,7 @@
 services:
   ergo:
     init: true
+    networks: [chad-net]
     image: ghcr.io/ergochat/ergo:master
     ports:
       - "6667:6667/tcp"
@@ -16,10 +17,30 @@ services:
       restart_policy:
         condition: on-failure
       replicas: 1
+
   livekit:
     image: livekit/livekit-server:latest
     command: ["--dev", "--bind=0.0.0.0"]
     network_mode: host
 
+  chadd:
+    networks: [chad-net]
+    build:
+      context: chadd
+    ports:
+      - "8888:8888"
+    volumes:
+      - "./config.json:/config.json:ro"
+    environment:
+      - "CHADD_LIVEKIT_KEY=devkey"
+      - "CHADD_LIVEKIT_SECRET=secret"
+      - "CHADD_AUTH_SECRET=secret"
+      - "CHADD_ERGO_BEARER_TOKEN=${ERGO_BEARER_TOKEN}"
+      - "CHADD_ERGO_BASE_URL=http://ergo:8089"
+
 volumes:
   data:
+
+networks:
+  chad-net:
+    driver: bridge

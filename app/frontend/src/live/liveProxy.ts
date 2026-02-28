@@ -11,6 +11,7 @@ import {
   UnpublishScreenShare,
   SetMicMuted,
 } from "@/bindings/IrChad/internal/live/livechat";
+import { GetJoinToken } from "@/bindings/IrChad/internal/network/networkservice";
 import { useAccountStore } from "@/stores/accountStore";
 import type { ScreenShareOpts } from "@/bindings/IrChad/internal/live";
 
@@ -76,11 +77,8 @@ export function setupEvents() {
 
 export async function connect(channel: string) {
   const accountStore = useAccountStore();
-
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = `${proto}//${accountStore.server.host}:7880`;
-
-  await Connect(url, accountStore.account.nick, channel);
+  const joinToken = await GetJoinToken(accountStore.discoveryURL, channel);
+  await Connect(accountStore.config.live.server, joinToken);
   await publishMic();
   playConnectionChime();
   useLiveStore().setConnected(channel);

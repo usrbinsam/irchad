@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-gst/go-gst/gst"
-	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4"
@@ -30,24 +29,6 @@ type LiveChat struct {
 	microphone io.Closer
 	camera     io.Closer
 	screen     *gst.Pipeline
-}
-
-func (l *LiveChat) getToken(identity, room string) (string, error) {
-	at := auth.NewAccessToken("devkey", "secret")
-	videoGrant := &auth.VideoGrant{
-		RoomJoin: true,
-		Room:     room,
-	}
-	videoGrant.SetCanPublish(true)
-	videoGrant.SetCanSubscribe(true)
-
-	sipGrant := &auth.SIPGrant{
-		Admin: false,
-		Call:  true,
-	}
-
-	at.SetSIPGrant(sipGrant).SetVideoGrant(videoGrant).SetIdentity(identity).SetValidFor(time.Hour)
-	return at.ToJWT()
 }
 
 func (l *LiveChat) onParticipantConnected(rp *lksdk.RemoteParticipant) {
@@ -75,9 +56,7 @@ func (l *LiveChat) onParticipantDisconnected(rp *lksdk.RemoteParticipant) {
 	)
 }
 
-func (l *LiveChat) Connect(url, nick, channelName string) error {
-	log.Printf("connecting to %s on %s", channelName, url)
-
+func (l *LiveChat) Connect(lkServerURL, token string) error {
 	cb := &lksdk.RoomCallback{
 		OnParticipantConnected:    l.onParticipantConnected,
 		OnParticipantDisconnected: l.onParticipantDisconnected,
@@ -96,13 +75,8 @@ func (l *LiveChat) Connect(url, nick, channelName string) error {
 		},
 	}
 
-	token, err := l.getToken(nick, channelName)
-	if err != nil {
-		log.Fatalf("error getting join token: %s", err.Error())
-	}
-
 	room, err := lksdk.ConnectToRoomWithToken(
-		url,
+		lkServerURL,
 		token,
 		cb,
 		lksdk.WithAutoSubscribe(true),
@@ -112,7 +86,7 @@ func (l *LiveChat) Connect(url, nick, channelName string) error {
 		return err
 	}
 	l.room = room
-	log.Printf("connected to %s", channelName)
+	log.Println("connected to live")
 
 	l.startDecodeServer()
 

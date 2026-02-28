@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"IrChad/internal/live"
+	"IrChad/internal/network"
 
 	"github.com/go-gst/go-gst/gst"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -28,6 +29,7 @@ func main() {
 			Name: "IrChad",
 			Services: []application.Service{
 				application.NewService(live.NewLiveChat()),
+				application.NewService(network.NewNetworkService()),
 			},
 			Assets: application.AssetOptions{
 				Handler: application.AssetFileServerFS(assets),
@@ -35,7 +37,6 @@ func main() {
 		},
 	)
 
-	/*window :=*/
 	app.Window.NewWithOptions(
 		application.WebviewWindowOptions{
 			Title:  "IrChad",

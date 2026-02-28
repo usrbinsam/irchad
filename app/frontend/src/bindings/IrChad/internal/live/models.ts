@@ -45,4 +45,5 @@ export interface WindowData {
     "H": number;
     "PID": number;
     "WMClass": string;
+    "MonitorIndex": number;
 }

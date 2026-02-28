@@ -4,11 +4,12 @@ import { useIRCStore } from "@/stores/irc";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { onBeforeMount } from "vue";
+import { NetworkService } from "@/bindings/IrChad/internal/network";
 
 const accountStore = useAccountStore();
 const ircStore = useIRCStore();
 
-const { account, server } = storeToRefs(accountStore);
+const { account, config, discoveryURL } = storeToRefs(accountStore);
 const withAccount = ref(false);
 const form = ref(false);
 const connecting = ref(false);
@@ -23,12 +24,34 @@ onBeforeMount(() => {
     ircStore.client.quit();
   });
 });
-function login() {
-  const s = server.value;
-  ircStore.connect(s.host, s.port, s.path);
-  connecting.value = true;
+
+onMounted(() => {
+  const a = account.value;
+  if (a.account && a.nick && a.password) {
+    login();
+  }
+});
+
+async function discover() {
+  const config = await NetworkService.Connect(
+    discoveryURL.value,
+    account.value.nick,
+    account.value.account,
+    account.value.password,
+  );
+  return config;
+}
+
+async function login() {
+  const discoveryConfig = await discover();
+  if (!discoveryConfig) return;
+  const s = URL.parse(discoveryConfig.irc.server);
+  if (!s) return;
+  config.value = discoveryConfig;
+
+  ircStore.connect(s.hostname, s.port, s.pathname);
   router.push({ name: "Chat" });
-  accountStore.saveServer();
+  accountStore.saveAccount();
 }
 
 function required(v: any) {
@@ -47,13 +70,10 @@ function required(v: any) {
             :rules="[required]"
             autofocus
           />
-          <v-text-field v-model="server.host" label="Server Host" />
-          <v-text-field v-model="server.port" label="Port" type="number" />
-          <v-text-field v-model="server.path" label="Path" />
           <v-text-field
             v-if="withAccount"
             v-model="account.account"
-            label="Username"
+            label="Account Name"
             role="username"
             :rules="[required]"
           />
@@ -71,6 +91,7 @@ function required(v: any) {
             That nickname is already in use or registered to an account. Try a
             different nickname, or login.
           </v-alert>
+          <v-text-field v-model="discoveryURL" label="Server" />
           <v-checkbox v-model="withAccount" label="Login with an account" />
         </v-card-text>
         <v-card-actions>

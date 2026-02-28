@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
+import { type Config } from "@/bindings/IrChad/internal/network/models";
 export const useAccountStore = defineStore("accountStore", () => {
   const authenticated = ref(false);
   const showRegistration = ref(false);
@@ -15,6 +16,8 @@ export const useAccountStore = defineStore("accountStore", () => {
     message: "",
   });
 
+  const discoveryURL = ref("http://127.0.0.1:8888");
+  const config = ref({} as Config);
   const server = ref({
     host: "127.0.0.1",
     port: 8097,
@@ -29,17 +32,16 @@ export const useAccountStore = defineStore("accountStore", () => {
     account.value.nick = v;
   }
 
-  function loadServer() {
-      const v = localStorage.getItem('lastServer')
-      if (v)
-          server.value = JSON.parse(v)
+  function loadAccount() {
+    const v = localStorage.getItem("account");
+    if (v) account.value = JSON.parse(v);
   }
 
-  function saveServer() {
-      localStorage.setItem('lastServer', JSON.stringify(server.value))
+  function saveAccount() {
+    localStorage.setItem("account", JSON.stringify(account.value));
   }
 
-  loadServer()
+  loadAccount();
 
   return {
     account,
@@ -47,7 +49,9 @@ export const useAccountStore = defineStore("accountStore", () => {
     authenticated,
     showRegistration,
     server,
-    saveServer,
+    discoveryURL,
+    config,
+    saveAccount,
     setAuthenticated,
     setNick,
   };
