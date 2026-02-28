@@ -269,17 +269,37 @@ func huntPipeWireTarget(w *WindowData) (uint, error) {
 	return nodeID, nil
 }
 
-func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
+func screenCaptureSourceElement(w *WindowData) string {
+	return fmt.Sprintf("ximagesrc xid=%d ! ", w.ID)
+}
+
+func screenAudioSourceElement(w *WindowData) string {
+	var pwTarget uint
+
+	// check if this PID has audio
+	if objectSerial, err := huntPipeWireTarget(w); err != nil {
+		pwTarget = objectSerial
+	}
+
+	if pwTarget > 0 {
+		return fmt.Sprintf("pipewiresrc target-object=%d ! ", pwTarget)
+	}
+
+	// send silence if there's no audio for this PID
+	return "audiotestsrc wave=silence is-live=true ! "
+}
+
+func NewScreenShareL(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
 	videoEncoder := preferredEncoder(w, opts)
 	pwTarget, err := huntPipeWireTarget(w)
 	if err != nil {
 		return nil, err
 	}
 	pipelineStr := fmt.Sprintf(
-		"ximagesrc xid=%d name=video_src use-damage=0 ! "+
-			"%s"+
+		screenAudioSourceElement(w),
+		"%s"+
 			"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 "+
-			"pipewiresrc target-object=%d ! "+
+			screenAudioSourceElement(w)+
 			"audioconvert ! "+
 			"audioresample ! "+
 			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+

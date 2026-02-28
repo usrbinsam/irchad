@@ -119,3 +119,42 @@ func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
 	tail := "h264parse config-interval=-1 ! video/x-h264,stream-format=byte-stream,alignment=au ! "
 	return basePipeline + encoder + tail
 }
+
+func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
+	pipelineStr := screenCaptureSourceElement(w) +
+		preferredEncoder(w, opts) +
+		"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 " +
+		screenAudioSourceElement(w) +
+		"audioconvert ! " +
+		"audioresample ! " +
+		"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! " +
+		"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! " +
+		"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1"
+
+	pipeline, err := gst.NewPipelineFromString(pipelineStr)
+	if err != nil {
+		log.Fatalf("pipeline err: %s", err.Error())
+	}
+
+	videoElem, err := pipeline.GetElementByName("video_sink")
+	if err != nil {
+		log.Fatalf("pipeline err: %s", err.Error())
+	}
+	videoSink := app.SinkFromElement(videoElem)
+
+	audioElem, err := pipeline.GetElementByName("audio_sink")
+	if err != nil {
+		log.Fatalf("pipeline err: %s", err.Error())
+	}
+	audioSink := app.SinkFromElement(audioElem)
+
+	go pushTrack(videoSink, videoTrack)
+	go pushTrack(audioSink, audioTrack)
+
+	err = pipeline.SetState(gst.StatePlaying)
+	if err != nil {
+		return nil, err
+	}
+
+	return pipeline, nil
+}
