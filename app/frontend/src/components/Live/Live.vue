@@ -27,7 +27,7 @@ const tracks = computed(() => {
   </v-dialog>
 
   <v-dialog v-model="videoDialog" fullscreen height="100vh">
-    <v-card v-if="videoDialog" height="100%">
+    <v-card height="100%">
       <v-card-title>
         Live Streams
         <v-icon @click="videoDialog = false"
