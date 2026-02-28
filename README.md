@@ -17,7 +17,7 @@ your own IRCd.
 | Chat         | x       | x     | x     |
 | Voice        | x       | x     | -     |
 | Camera       | -       | x     | -     |
-| Screen Share | -       | x     | -     |
+| Screen Share | x       | x     | -     |
 
 ## Motivation
 
