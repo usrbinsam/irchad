@@ -8,18 +8,13 @@ import { onBeforeMount } from "vue";
 const accountStore = useAccountStore();
 const ircStore = useIRCStore();
 
-const { account } = storeToRefs(accountStore);
+const { account, server } = storeToRefs(accountStore);
 const withAccount = ref(false);
 const form = ref(false);
 const connecting = ref(false);
 
 const router = useRouter();
 const nickInUse = ref(false);
-const server = ref({
-  host: "127.0.0.1",
-  port: 8097,
-  path: "/",
-});
 
 onBeforeMount(() => {
   ircStore.client.on("nick in use", () => {
@@ -33,6 +28,7 @@ function login() {
   ircStore.connect(s.host, s.port, s.path);
   connecting.value = true;
   router.push({ name: "Chat" });
+  accountStore.saveServer()
 }
 
 function required(v: any) {

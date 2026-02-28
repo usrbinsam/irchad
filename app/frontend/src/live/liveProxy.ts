@@ -77,7 +77,10 @@ export function setupEvents() {
 export async function connect(channel: string) {
   const accountStore = useAccountStore();
 
-  await Connect(accountStore.account.nick, channel);
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${proto}//${accountStore.server.host}:7880`;
+
+  await Connect(url, accountStore.account.nick, channel);
   await publishMic();
   playConnectionChime();
   useLiveStore().setConnected(channel);

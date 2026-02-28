@@ -15,6 +15,12 @@ export const useAccountStore = defineStore("accountStore", () => {
     message: "",
   });
 
+  const server = ref({
+    host: "127.0.0.1",
+    port: 8097,
+    path: "/",
+  });
+
   function setAuthenticated(v: boolean) {
     authenticated.value = v;
   }
@@ -23,11 +29,25 @@ export const useAccountStore = defineStore("accountStore", () => {
     account.value.nick = v;
   }
 
+  function loadServer() {
+      const v = localStorage.getItem('lastServer')
+      if (v)
+          server.value = JSON.parse(v)
+  }
+
+  function saveServer() {
+      localStorage.setItem('lastServer', JSON.stringify(server.value))
+  }
+
+  loadServer()
+
   return {
     account,
     authError,
     authenticated,
     showRegistration,
+    server,
+    saveServer,
     setAuthenticated,
     setNick,
   };

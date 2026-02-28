@@ -15,16 +15,14 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-func NewLiveChat(url string) *LiveChat {
+func NewLiveChat() *LiveChat {
 	return &LiveChat{
-		url:      url,
 		room:     nil,
 		registry: NewStreamRegistry(),
 	}
 }
 
 type LiveChat struct {
-	url           string
 	room          *lksdk.Room
 	registry      *StreamRegistry
 	decoderServer *httpServer // provides decoded video/audio streams when connected to a room
@@ -77,8 +75,8 @@ func (l *LiveChat) onParticipantDisconnected(rp *lksdk.RemoteParticipant) {
 	)
 }
 
-func (l *LiveChat) Connect(nick string, channelName string) error {
-	log.Printf("connecting to %s on %s", channelName, l.url)
+func (l *LiveChat) Connect(url, nick, channelName string) error {
+	log.Printf("connecting to %s on %s", channelName, url)
 
 	cb := &lksdk.RoomCallback{
 		OnParticipantConnected:    l.onParticipantConnected,
@@ -104,7 +102,7 @@ func (l *LiveChat) Connect(nick string, channelName string) error {
 	}
 
 	room, err := lksdk.ConnectToRoomWithToken(
-		l.url,
+		url,
 		token,
 		cb,
 		lksdk.WithAutoSubscribe(true),
@@ -315,6 +313,8 @@ func (l *LiveChat) onTrackSubscribed(
 	case webrtc.RTPCodecTypeAudio:
 		l.decodeAudioStream(track, publication, rp)
 		return
+	default:
+		panic("unknown codec")
 	}
 
 	ev := ParticipantTrackPublished{

@@ -9,8 +9,8 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function Connect(nick: string, channelName: string): $CancellablePromise<void> {
-    return $Call.ByID(1257987059, nick, channelName);
+export function Connect(url: string, nick: string, channelName: string): $CancellablePromise<void> {
+    return $Call.ByID(1257987059, url, nick, channelName);
 }
 
 export function Connected(): $CancellablePromise<boolean> {
