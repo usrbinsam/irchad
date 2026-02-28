@@ -13,10 +13,16 @@ const windowList = ref([] as WindowData[]);
 const selectedWindow = ref(0);
 const screenShareOpts = ref({
   FrameRate: 30,
-  BitRate: 8000,
+  BitRate: 4000,
 } as ScreenShareOpts);
 async function share() {
-  await shareWindow(selectedWindow.value, screenShareOpts.value);
+  console.log(screenShareOpts.value)
+  const v = screenShareOpts.value
+  // https://github.com/vuejs/core/issues/10886
+  await shareWindow(selectedWindow.value, {
+    FrameRate: parseInt(v.FrameRate, 10),
+    BitRate: parseInt(v.BitRate, 10),
+  });
   screenShareDialog.value = false;
 }
 
@@ -43,7 +49,7 @@ onMounted(async () => (windowList.value = await getWindows()));
       <v-text-field
         type="number"
         label="Bit Rate"
-        v-model="screenShareOpts.BitRate"
+        v-model.number="screenShareOpts.BitRate"
       />
     </v-card-text>
     <v-card-actions align="end">
