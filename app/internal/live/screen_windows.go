@@ -2,10 +2,12 @@ package live
 
 import (
 	"fmt"
+	"log"
 	"syscall"
 	"unsafe"
 
 	"github.com/go-gst/go-gst/gst"
+	"github.com/go-gst/go-gst/gst/app"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
@@ -45,7 +47,7 @@ func GetWindows() ([]WindowData, error) {
 			title = syscall.UTF16ToString(buf)
 		}
 		if title == "" {
-			title = "(unnamed)"
+			return 1
 		}
 
 		// 2. Get Class Name (The closest Win32 equivalent to X11 WM_CLASS)
@@ -91,6 +93,63 @@ func GetWindows() ([]WindowData, error) {
 	return results, nil
 }
 
-func NewScreenShare(w *WindowData, ss *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
-	panic("not implemented")
+func screenCaptureSourceElement(w *WindowData) string {
+	common := "do-timestamp=true show-cursor=true "
+	if w.MonitorIndex != 0 {
+		return fmt.Sprintf(
+			"d3d12screencapturesrc %s monitor-index=%d ! ",
+			common, w.MonitorIndex,
+		)
+	}
+	return fmt.Sprintf(
+		"d3d12screencapturesrc %s crop-x=%d crop-y=%d crop-width=%d crop-height=%d ! ",
+		common, w.X, w.Y, w.W, w.H,
+	)
+}
+
+func screenAudioSourceElement(w *WindowData) string {
+	if w.MonitorIndex != 0 {
+		return "wasapi2src loopback=true loopback-mode=include-process-tree loopback-target-pid=%d low-latency=true do-timestamp=true ! "
+	}
+	// send silence if we're sharing the whole desktop
+	return "audiotestsrc wave=silence is-live=true ! "
+}
+
+func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
+	pipelineStr := screenCaptureSourceElement(w) +
+		preferredEncoder(w, opts) +
+		"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 " +
+		screenAudioSourceElement(w) +
+		"audioconvert ! " +
+		"audioresample ! " +
+		"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! " +
+		"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! " +
+		"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1"
+
+	pipeline, err := gst.NewPipelineFromString(pipelineStr)
+	if err != nil {
+		log.Fatalf("pipeline err: %s", err.Error())
+	}
+
+	videoElem, err := pipeline.GetElementByName("video_sink")
+	if err != nil {
+		log.Fatalf("pipeline err: %s", err.Error())
+	}
+	videoSink := app.SinkFromElement(videoElem)
+
+	audioElem, err := pipeline.GetElementByName("audio_sink")
+	if err != nil {
+		log.Fatalf("pipeline err: %s", err.Error())
+	}
+	audioSink := app.SinkFromElement(audioElem)
+
+	go pushTrack(videoSink, videoTrack)
+	go pushTrack(audioSink, audioTrack)
+
+	err = pipeline.SetState(gst.StatePlaying)
+	if err != nil {
+		return nil, err
+	}
+
+	return pipeline, nil
 }
