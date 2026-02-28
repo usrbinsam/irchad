@@ -43,30 +43,3 @@ IrChad connects to the server and joins every channel in the `LIST` output.
 
 It currently only supports a single-network, but multi-network support should be
 mostly trivial.
-
-## Contributing
-
-Contributions are welcome, there is a LOT to do.
-See [Issues](https://github.com/usrbinsam/irchad/issues).
-
-You will need:
-
-- [Go](https://go.dev/doc/install)
-- [Wails v3](https://v3alpha.wails.io/)
-- [Node 24](https://nodejs.org/en/download) (using something like [fnm](https://github.com/Schniz/fnm) is recommended)
-- [npm](https://npmjs.org/)
-- [Docker](https://docs.docker.com/get-started/get-docker/) (or something to run
-  containers)
-- [Task](https://taskfile.dev/)
-- [GStreamer](https://gstreamer.freedesktop.org/)
-
-1. Rename `ircd.test.yaml` -> `ircd.yaml`
-2. Start Ergo and LiveKit Server with `docker compose up -d`
-3. Connect to ergo with an IRC client and join some channels
-4. Start wails dev with `wails3 dev` in the `app/` folder
-
-### Useful links
-
-- [ergo manual](https://github.com/ergochat/ergo/blob/stable/docs/MANUAL.md)
-- [IRCv3](https://ircv3.net/irc/)
-- [Wails](https://v3alpha.wails.io/)
