@@ -215,13 +215,13 @@ func (l *LiveChat) UnpublishMicrophone() {
 	err := l.room.LocalParticipant.UnpublishTrack(pub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish microphone track: %s\n", err.Error())
-		return
+		//return
 	}
 
 	err = l.microphone.Close()
 	if err != nil {
 		log.Printf("failed to stop microphone: %s\n", err.Error())
-		return
+		// return
 	}
 	l.microphone = nil
 }
@@ -353,7 +353,7 @@ func (l *LiveChat) UnpublishScreenShare() {
 	err := l.room.LocalParticipant.UnpublishTrack(videoPub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish screen video track: %s", err.Error())
-		return
+		//return
 	}
 
 	// audio publication
@@ -361,13 +361,13 @@ func (l *LiveChat) UnpublishScreenShare() {
 	err = l.room.LocalParticipant.UnpublishTrack(audioPub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish screen audio track: %s", err.Error())
-		return
+		// return
 	}
 	// stop pipeline
 	err = l.screen.SetState(gst.StateNull)
 	if err != nil {
 		log.Printf("failed to stop screen share: %s", err.Error())
-		return
+		// return
 	}
 	l.screen = nil
 	application.Get().Event.Emit(EventScreenShareClosed, ScreenShareClosed{})
