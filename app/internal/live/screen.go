@@ -7,6 +7,8 @@ import (
 	"github.com/go-gst/go-gst/gst"
 	"github.com/go-gst/go-gst/gst/app"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/pion/rtcp"
+	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
 )
 
@@ -120,7 +122,11 @@ func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
 	return basePipeline + encoder + tail
 }
 
-func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
+type gstForceKeyUnit struct {
+	Name string
+}
+
+func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, *lksdk.LocalSampleTrack, error) {
 	pipelineStr := screenCaptureSourceElement(w) +
 		preferredEncoder(w, opts) +
 		"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 " +
@@ -148,13 +154,32 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack
 	}
 	audioSink := app.SinkFromElement(audioElem)
 
+	videoTrack, err := lksdk.NewLocalSampleTrack(
+		webrtc.RTPCodecCapability{
+			MimeType: webrtc.MimeTypeH264,
+		},
+		lksdk.WithRTCPHandler(func(packet rtcp.Packet) {
+			switch packet.(type) {
+			case *rtcp.PictureLossIndication:
+				log.Println("got picture loss indicater, sending Key Frame")
+				st := gst.NewStructure("GstForceKeyUnit")
+				event := gst.NewCustomEvent(gst.EventTypeCustomUpstream, st)
+				if !videoSink.SendEvent(event) {
+					log.Println("failed to send GstForceKeyUnit event")
+				}
+			}
+		}),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
 	go pushTrack(videoSink, videoTrack)
 	go pushTrack(audioSink, audioTrack)
 
 	err = pipeline.SetState(gst.StatePlaying)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return pipeline, nil
+	return pipeline, videoTrack, nil
 }

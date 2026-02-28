@@ -215,7 +215,7 @@ func (l *LiveChat) UnpublishMicrophone() {
 	err := l.room.LocalParticipant.UnpublishTrack(pub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish microphone track: %s\n", err.Error())
-		//return
+		// return
 	}
 
 	err = l.microphone.Close()
@@ -353,7 +353,7 @@ func (l *LiveChat) UnpublishScreenShare() {
 	err := l.room.LocalParticipant.UnpublishTrack(videoPub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish screen video track: %s", err.Error())
-		//return
+		// return
 	}
 
 	// audio publication
@@ -395,16 +395,6 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		return fmt.Errorf("invalid window ID")
 	}
 
-	videoTrack, err := lksdk.NewLocalSampleTrack(
-		webrtc.RTPCodecCapability{
-			MimeType: webrtc.MimeTypeH264,
-		},
-	)
-	if err != nil {
-		log.Printf("error creating video track: %s", err.Error())
-		return err
-	}
-
 	audioTrack, err := lksdk.NewLocalSampleTrack(
 		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus},
 	)
@@ -413,8 +403,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		return err
 	}
 
-	log.Printf("new screen share for %s - audio=%s video=%s", w.Title, audioTrack.ID(), videoTrack.ID())
-	screenShare, err := NewScreenShare(w, &ss, audioTrack, videoTrack)
+	screenShare, videoTrack, err := NewScreenShare(w, &ss, audioTrack)
 	if err != nil {
 		log.Printf("GStreamer error: %s", err.Error())
 		return err
