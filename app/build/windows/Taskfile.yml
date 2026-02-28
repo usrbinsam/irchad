@@ -3,6 +3,9 @@ version: '3'
 includes:
   common: ../Taskfile.yml
 
+env:
+  CGO_ENABLED: '1'
+
 vars:
   # Signing configuration - edit these values for your project
   # SIGN_CERTIFICATE: "path/to/certificate.pfx"
@@ -13,6 +16,7 @@ vars:
 
   # Docker image for cross-compilation with CGO (used when CGO_ENABLED=1 on non-Windows)
   CROSS_IMAGE: wails-cross
+  CGO_ENABLED: 1
 
 tasks:
   build:
@@ -51,7 +55,7 @@ tasks:
       BUILD_FLAGS: '{{if eq .DEV "true"}}{{if .EXTRA_TAGS}}-tags {{.EXTRA_TAGS}} {{end}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}} -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui"{{end}}'
     env:
       GOOS: windows
-      CGO_ENABLED: '{{.CGO_ENABLED | default "0"}}'
+      CGO_ENABLED: '1'
       GOARCH: '{{.ARCH | default ARCH}}'
 
   build:docker:

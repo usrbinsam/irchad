@@ -27,7 +27,7 @@ func main() {
 		application.Options{
 			Name: "IrChad",
 			Services: []application.Service{
-				application.NewService(live.NewLiveChat("ws://127.0.0.1:7880")),
+				application.NewService(live.NewLiveChat()),
 			},
 			Assets: application.AssetOptions{
 				Handler: application.AssetFileServerFS(assets),
