@@ -29,15 +29,49 @@ const props = defineProps<{
       </div>
     </template>
   </v-img>
-  <video
-    v-else
-    :src="url"
-    class="video-feed d-flex align-end pb-2 px-2"
-    autoplay
-  ></video>
+  <div v-else class="video-container">
+    <video :src="url" autoplay playsinline></video>
+    <div class="video-overlay">
+      <v-chip size="small" dark class="glass-chip">
+        {{ trackName || `${title}'s Screen Share` }}</v-chip
+      >
+    </div>
+  </div>
 </template>
 
 <style scoped>
+.video-container {
+  position: relative;
+  width: 100%;
+  background-color: #000;
+}
+
+.glass-chip {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.video-container video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  opacity: 0;
+}
+
+.video-container:hover .video-overlay {
+  opacity: 1;
+}
+
 .video-feed {
   transform: translateZ(0);
   will-change: transform, opacity;
@@ -45,5 +79,6 @@ const props = defineProps<{
   object-fit: contain;
   width: 100%;
   height: 100%;
+  aspect-ratio: 16/9;
 }
 </style>
