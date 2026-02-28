@@ -109,13 +109,11 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
-	"time"
 	"unsafe"
 
 	"github.com/go-gst/go-gst/gst"
 	"github.com/go-gst/go-gst/gst/app"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/pion/webrtc/v4/pkg/media"
 )
 
 // this and the CGO was made by Google Gemini
@@ -168,31 +166,6 @@ func GetWindows() ([]WindowData, error) {
 	}
 
 	return results, nil
-}
-
-// func hasElement(name string) bool {
-// 	factory := gst.Find(name)
-// 	return factory != nil
-// }
-
-func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
-	return fmt.Sprintf(
-		"ximagesrc xid=%d name=video_src use-damage=0 ! "+
-			"videoconvert ! "+
-			"videoscale add-borders=true ! "+
-			"video/x-raw,format=NV12,width=%d,height=%d,framerate=%d/1,pixel-aspect-ratio=1/1 ! "+
-			"vah264enc bitrate=%d ! "+
-			"h264parse config-interval=-1 ! "+
-			"video/x-h264,stream-format=byte-stream,alignment=au ! ",
-		w.ID, w.W&^1, w.H&^1, ss.FrameRate, ss.BitRate,
-	)
-}
-
-func NewGstScreenShare(w *WindowData, track *lksdk.LocalTrack, ss *ScreenShareOpts) (*GstTrackWriter, error) {
-	pipelineStr := preferredEncoder(w, ss)
-	log.Printf("selected encoder: %s\n", pipelineStr)
-
-	return NewGstTrackWriter(track, pipelineStr, time.Second/30)
 }
 
 type PwNode struct {
@@ -273,40 +246,6 @@ func listChildPIDs(parentPID uint) ([]uint, error) {
 	return pids, nil
 }
 
-func NewGstAppAudioShare(w *WindowData, track *lksdk.LocalTrack) (*GstTrackWriter, error) {
-	log.Printf("grabbing audio for window %+v\n", w)
-	nodeID, err := getPipewireNodeID(w.PID)
-	if err != nil {
-		log.Printf("no pipewire node for pid %d. searching child PIDs", w.PID)
-		childPIDs, err := listChildPIDs(w.PID)
-		if err != nil {
-			log.Printf("error looking up child PIDs for %d: %s", w.PID, err.Error())
-			return nil, err
-		}
-		for _, pid := range childPIDs {
-			childNodeID, err := getPipewireNodeID(pid)
-			if err != nil {
-				log.Printf("no pipewire node for child PID %d", childNodeID)
-				continue
-			}
-			nodeID = childNodeID
-			break
-		}
-	}
-
-	log.Printf("found pipewire node %d", nodeID)
-	pipelineStr := fmt.Sprintf(
-		"pipewiresrc target-object=%d ! "+
-			"audioconvert ! "+
-			"audioresample ! "+
-			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+
-			"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! "+
-			"appsink name=sink sync=false emit-signals=true drop=true max-buffers=1",
-		nodeID,
-	)
-	return NewGstTrackWriter(track, pipelineStr, 20*time.Millisecond)
-}
-
 func huntPipeWireTarget(w *WindowData) (uint, error) {
 	nodeID, err := getPipewireNodeID(w.PID)
 	if err != nil {
@@ -330,43 +269,6 @@ func huntPipeWireTarget(w *WindowData) (uint, error) {
 	return nodeID, nil
 }
 
-func pushTrack(appSink *app.Sink, track *lksdk.LocalSampleTrack) {
-	sinkProp, err := appSink.GetProperty("name")
-	if err != nil {
-		log.Fatalf("sink has no name?")
-	}
-
-	name := sinkProp.(string)
-
-	for {
-		sample := appSink.PullSample()
-		if sample == nil {
-			if appSink.IsEOS() {
-				log.Printf("end of stream. track=%s sink=%s", track.ID(), name)
-				return
-			}
-			continue
-		}
-		buffer := sample.GetBuffer()
-		if buffer == nil {
-			continue
-		}
-
-		data := buffer.Bytes()
-		dur := buffer.Duration().AsDuration()
-
-		webrtcSample := media.Sample{
-			Data:     data,
-			Duration: *dur,
-		}
-		if err := track.WriteSample(webrtcSample, nil); err != nil {
-			log.Printf("write sample error: %s", err.Error())
-			return
-		}
-		// log.Printf("wrote %d bytes to from sink %s to track %s", len(data), name, track.ID())
-	}
-}
-
 func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
 	videoEncoder := preferredEncoder(w, opts)
 	pwTarget, err := huntPipeWireTarget(w)
@@ -374,7 +276,8 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack
 		return nil, err
 	}
 	pipelineStr := fmt.Sprintf(
-		"%s"+
+		"ximagesrc xid=%d name=video_src use-damage=0 ! "+
+			"%s"+
 			"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 "+
 			"pipewiresrc target-object=%d ! "+
 			"audioconvert ! "+
@@ -382,7 +285,9 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack
 			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+
 			"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! "+
 			"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1",
-		videoEncoder, pwTarget,
+		w.ID,
+		videoEncoder,
+		pwTarget,
 	)
 
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)
