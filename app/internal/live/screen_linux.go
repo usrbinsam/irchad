@@ -110,10 +110,6 @@ import (
 	"os/exec"
 	"strconv"
 	"unsafe"
-
-	"github.com/go-gst/go-gst/gst"
-	"github.com/go-gst/go-gst/gst/app"
-	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 // this and the CGO was made by Google Gemini
@@ -287,53 +283,4 @@ func screenAudioSourceElement(w *WindowData) string {
 
 	// send silence if there's no audio for this PID
 	return "audiotestsrc wave=silence is-live=true ! "
-}
-
-func NewScreenShareL(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, error) {
-	videoEncoder := preferredEncoder(w, opts)
-	pwTarget, err := huntPipeWireTarget(w)
-	if err != nil {
-		return nil, err
-	}
-	pipelineStr := fmt.Sprintf(
-		screenAudioSourceElement(w),
-		"%s"+
-			"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 "+
-			screenAudioSourceElement(w)+
-			"audioconvert ! "+
-			"audioresample ! "+
-			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+
-			"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! "+
-			"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1",
-		w.ID,
-		videoEncoder,
-		pwTarget,
-	)
-
-	pipeline, err := gst.NewPipelineFromString(pipelineStr)
-	if err != nil {
-		log.Fatalf("pipeline err: %s", err.Error())
-	}
-
-	videoElem, err := pipeline.GetElementByName("video_sink")
-	if err != nil {
-		log.Fatalf("videoBin.GetElements(): %s", err.Error())
-	}
-	videoSink := app.SinkFromElement(videoElem)
-
-	audioElem, err := pipeline.GetElementByName("audio_sink")
-	if err != nil {
-		log.Fatalf("audioBin.GetElements(): %s", err.Error())
-	}
-	audioSink := app.SinkFromElement(audioElem)
-
-	go pushTrack(videoSink, videoTrack)
-	go pushTrack(audioSink, audioTrack)
-
-	err = pipeline.SetState(gst.StatePlaying)
-	if err != nil {
-		return nil, err
-	}
-
-	return pipeline, nil
 }
