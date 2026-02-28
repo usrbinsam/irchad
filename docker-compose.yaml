@@ -5,6 +5,7 @@ services:
     ports:
       - "6667:6667/tcp"
       - "8097:8097"
+      - "8089:8089"
     volumes:
       - data:/ircd
       - ./ircd.yaml:/ircd/ircd.yaml
