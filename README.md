@@ -15,7 +15,7 @@ your own IRCd.
 |              | Windows | Linux | macOS |
 | ------------ | ------- | ----- | ----- |
 | Chat         | x       | x     | x     |
-| Voice        | -       | x     | -     |
+| Voice        | x       | x     | -     |
 | Camera       | -       | x     | -     |
 | Screen Share | -       | x     | -     |
 
