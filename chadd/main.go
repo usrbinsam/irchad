@@ -15,7 +15,11 @@ func main() {
 		client:      &http.Client{},
 	}
 
-	http.HandleFunc("POST /api/login", login)
+	http.Handle("POST /api/login", LoggerMiddleware(http.HandlerFunc(login)))
+	http.Handle("POST /api/join", LoggerMiddleware(AuthMiddleware(http.HandlerFunc(getJoinToken))))
+	http.Handle("GET /config.json", LoggerMiddleware(http.HandlerFunc(getConfig)))
+
+	log.Printf("chadd running")
 	err := http.ListenAndServe("0.0.0.0:8888", nil)
 	if err != nil {
 		log.Println(err.Error())
