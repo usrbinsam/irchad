@@ -28,7 +28,7 @@ function login() {
   ircStore.connect(s.host, s.port, s.path);
   connecting.value = true;
   router.push({ name: "Chat" });
-  accountStore.saveServer()
+  accountStore.saveServer();
 }
 
 function required(v: any) {
@@ -38,7 +38,7 @@ function required(v: any) {
 
 <template>
   <main class="w-25 mt-5 ma-auto">
-    <v-card title="Login to IrChad">
+    <v-card title="Connect to a server">
       <v-form @submit.prevent="login" v-model="form">
         <v-card-text>
           <v-text-field
