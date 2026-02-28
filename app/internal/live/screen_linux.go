@@ -285,7 +285,9 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack, videoTrack
 			"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! "+
 			"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! "+
 			"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1",
-		videoEncoder, pwTarget,
+		w.ID,
+		videoEncoder,
+		pwTarget,
 	)
 
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)
