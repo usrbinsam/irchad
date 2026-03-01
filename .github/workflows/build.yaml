@@ -84,6 +84,7 @@ jobs:
 
       - name: Build Application
         shell: bash
+        working-directory: app/
         run: |
           # Ensure Go bin is in path for the wails command
           export PATH=$PATH:$(go env GOPATH)/bin
@@ -95,4 +96,4 @@ jobs:
         with:
           name: wails-app-${{ matrix.platform }}
           path: |
-            build/bin/*
+            app/build/bin/*
