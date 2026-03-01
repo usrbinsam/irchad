@@ -141,12 +141,11 @@ export const useIRCStore = defineStore("ircStore", () => {
 
   const client = markRaw(new Client());
 
-  function connect(host: string, port: number, path: string) {
+  function connect(tls: boolean, host: string, port: number, path: string) {
     client.requestCap("draft/metadata-2");
     client.requestCap("echo-message");
     client.requestCap("chathistory");
     client.requestCap("draft/multiline");
-    const tls = location.protocol === "https:";
     const connectParams = {
       host,
       port,
@@ -331,7 +330,12 @@ export const useIRCStore = defineStore("ircStore", () => {
       buffer = bufferStore.getBuffer(message.target);
     }
 
+    if (message.from_server) {
+      return;
+    }
+
     if (!buffer) {
+      console.log("adding buffer from message: ", message);
       buffer = bufferStore.addBuffer(message.nick, {
         name: message.nick,
         channel: null,
