@@ -101,6 +101,10 @@ jobs:
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
 
+          go install github.com/google/go-licenses@latest
+          mkdir -p dist/licenses/go-deps
+          go-licenses save . --destination="bin/dist/licenses/go-deps" --force
+
       - name: Bundle GStreamer DLLs
         if: matrix.platform == 'windows'
         working-directory: app/
@@ -109,6 +113,10 @@ jobs:
           mv bin/IrChad.exe dist/
           mkdir -p dist/lib/gstreamer-1.0
           cp /mingw64/lib/gstreamer-1.0/*.dll dist/lib/gstreamer-1.0/
+
+      - name: Create tarball
+        working-directory: app/
+        run: |
           cd dist && tar xJf ../bin/irchad.tar.xz .
 
       - name: Upload Artifact
@@ -116,4 +124,4 @@ jobs:
         with:
           name: irchad-${{ matrix.platform }}
           path: |
-            app/bin/*
+            app/dist/*
