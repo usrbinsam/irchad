@@ -20,6 +20,9 @@ jobs:
             shell: msys2 {0}
 
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
 
     steps:
       - name: Checkout code
@@ -83,14 +86,12 @@ jobs:
             mingw-w64-x86_64-nodejs
 
       - name: Install Wails v3 CLI
-        shell: ${{ matrix.shell }}
         run: |
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Build Application
         working-directory: app/
-        shell: ${{ matrix.shell }}
         run: |
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
@@ -98,6 +99,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wails-app-${{ matrix.platform }}
+          name: irchad-${{ matrix.platform }}
           path: |
             app/bin/*
