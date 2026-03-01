@@ -85,14 +85,14 @@ jobs:
             mingw-w64-x86_64-gst-libav
             mingw-w64-x86_64-nodejs
 
-      - name: Install Wails v3 CLI
-        run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
       - name: Build Application
         working-directory: app/
         run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          ls "$(go env GOPATH)/bin"
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          echo "$PKG_CONFIG_PATH"
+
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
 
