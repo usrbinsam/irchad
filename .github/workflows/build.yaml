@@ -80,7 +80,7 @@ jobs:
 
       - name: Install Wails v3 CLI
         shell: bash
-        run: go install github.com/wailsapp/wails/v3/cmd/wails@latest
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
       - name: Build Application
         shell: bash
