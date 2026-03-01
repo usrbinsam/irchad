@@ -54,6 +54,7 @@ jobs:
         if: matrix.platform == 'windows'
         uses: msys2/setup-msys2@v2
         with:
+          msystem: MINGW64
           update: true
           install: >-
             mingw-w64-x86_64-crt-git
@@ -79,19 +80,15 @@ jobs:
             mingw-w64-x86_64-nodejs
 
       - name: Install Wails v3 CLI
-        shell: bash
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
       - name: Build Application
-        shell: bash
         working-directory: app/
         run: |
-          # Ensure Go bin is in path for the wails command
           export PATH=$PATH:$(go env GOPATH)/bin
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
 
-      # --- Upload Artifacts ---
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
