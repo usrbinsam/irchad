@@ -112,8 +112,7 @@ jobs:
         if: matrix.platform == 'windows'
         working-directory: app/
         run: |
-          ldd bin/IrChad.exe | grep "mingw64" | awk '{print $3}' | xargs -I {} cp {} bundle/
-          mv bin/IrChad.exe bundle/
+          ldd bundle/IrChad.exe | grep "mingw64" | awk '{print $3}' | xargs -I {} cp {} bundle/
           mkdir -p bundle/lib/gstreamer-1.0
           cp /mingw64/lib/gstreamer-1.0/*.dll bundle/lib/gstreamer-1.0/
 
