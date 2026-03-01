@@ -52,6 +52,7 @@ async function login() {
   ircStore.connect(s.protocol === "wss:", s.hostname, s.port, s.pathname);
   router.push({ name: "Chat" });
   accountStore.saveAccount();
+  connecting.value = true;
 }
 
 function required(v: any) {
