@@ -16,13 +16,8 @@ export const useAccountStore = defineStore("accountStore", () => {
     message: "",
   });
 
-  const discoveryURL = ref("http://127.0.0.1:8888");
+  const discoveryURL = ref("https://chat.gentoo.party");
   const config = ref({} as Config);
-  const server = ref({
-    host: "127.0.0.1",
-    port: 8097,
-    path: "/",
-  });
 
   function setAuthenticated(v: boolean) {
     authenticated.value = v;
@@ -41,14 +36,13 @@ export const useAccountStore = defineStore("accountStore", () => {
     localStorage.setItem("account", JSON.stringify(account.value));
   }
 
-  loadAccount();
+  // loadAccount();
 
   return {
     account,
     authError,
     authenticated,
     showRegistration,
-    server,
     discoveryURL,
     config,
     saveAccount,
