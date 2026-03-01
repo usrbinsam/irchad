@@ -88,8 +88,9 @@ jobs:
       - name: Build Application
         working-directory: app/
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
           export PATH="$PATH:$(go env GOPATH)/bin"
+          echo $PATH
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
