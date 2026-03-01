@@ -98,4 +98,4 @@ jobs:
         with:
           name: wails-app-${{ matrix.platform }}
           path: |
-            app/build/bin/*
+            app/bin/*
