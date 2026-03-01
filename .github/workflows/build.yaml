@@ -89,9 +89,7 @@ jobs:
         working-directory: app/
         run: |
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-          ls "$(go env GOPATH)/bin"
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          echo "$PKG_CONFIG_PATH"
+          export PATH="$PATH:$(go env GOPATH)/bin"
 
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
