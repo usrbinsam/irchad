@@ -25,12 +25,12 @@ onBeforeMount(() => {
   });
 });
 
-onMounted(() => {
-  const a = account.value;
-  if (a.account && a.nick && a.password) {
-    login();
-  }
-});
+// onMounted(() => {
+//   const a = account.value;
+//   if (a.account && a.nick && a.password) {
+//     login();
+//   }
+// });
 
 async function discover() {
   const config = await NetworkService.Connect(
@@ -49,7 +49,7 @@ async function login() {
   if (!s) return;
   config.value = discoveryConfig;
 
-  ircStore.connect(s.hostname, s.port, s.pathname);
+  ircStore.connect(s.protocol === "wss:", s.hostname, s.port, s.pathname);
   router.push({ name: "Chat" });
   accountStore.saveAccount();
 }
