@@ -102,8 +102,8 @@ jobs:
           wails3 build
 
           go install github.com/google/go-licenses@latest
-          mkdir -p dist/licenses/go-deps
-          go-licenses save . --save_path="bin/dist/licenses/go-deps" --force || true
+          mkdir -p bundle/licenses/go-deps
+          go-licenses save . --save_path="bundle/licenses/go-deps" --force || true
 
       - name: Bundle GStreamer DLLs
         if: matrix.platform == 'windows'
