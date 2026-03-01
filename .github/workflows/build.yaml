@@ -88,9 +88,16 @@ jobs:
       - name: Build Application
         working-directory: app/
         run: |
-          export PATH="$PATH:$(go env GOPATH)/bin"
-          echo $PATH
+          RAW_GOPATH=$(go env GOPATH)
+          if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+            GOPATH_UNIX=$(cygpath -u "$RAW_GOPATH")
+            export PATH="$PATH:$GOPATH_UNIX/bin"
+          else
+            export PATH="$PATH:$RAW_GOPATH/bin"
+          fi
+
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+
 
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
