@@ -103,7 +103,7 @@ jobs:
 
           go install github.com/google/go-licenses@latest
           mkdir -p dist/licenses/go-deps
-          go-licenses save . --destination="bin/dist/licenses/go-deps" --force
+          go-licenses save . --save_path="bin/dist/licenses/go-deps" --force
 
       - name: Bundle GStreamer DLLs
         if: matrix.platform == 'windows'
