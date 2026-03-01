@@ -21,7 +21,7 @@ export interface Channel {
 export const useLiveStore = defineStore("liveStore", () => {
   const channels = ref(new Map<string, Channel>()); // participants in channels which we are not in
   const participants = ref(new Map<string, Participant>()); // particippants in active channels
-  const connected = ref("");
+  const connected = ref(null as string | null);
   const micEnabled = ref(false);
   const camEnabled = ref(false);
   const screenShareEnabled = ref(false);
