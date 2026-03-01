@@ -98,9 +98,18 @@ jobs:
 
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
-
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
+
+      - name: Bundle GStreamer DLLs
+        if: matrix.platform == 'windows'
+        working-directory: app/
+        run: |
+          ldd bin/IrChad.exe | grep "mingw64" | awk '{print $3}' | xargs -I {} cp {} dist/
+          mv bin/IrChad.exe dist/
+          mkdir -p dist/lib/gstreamer-1.0
+          cp /mingw64/lib/gstreamer-1.0/*.dll dist/lib/gstreamer-1.0/
+          cd dist && tar xJf ../bin/irchad.tar.xz .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
