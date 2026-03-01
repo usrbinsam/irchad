@@ -104,6 +104,7 @@ jobs:
           go install github.com/google/go-licenses@latest
           mkdir -p bundle/licenses/go-deps
           go-licenses save . --save_path="bundle/licenses/go-deps" --force || true
+          mv bin/* bundle/
 
       - name: Bundle GStreamer DLLs
         if: matrix.platform == 'windows'
@@ -114,15 +115,9 @@ jobs:
           mkdir -p bundle/lib/gstreamer-1.0
           cp /mingw64/lib/gstreamer-1.0/*.dll bundle/lib/gstreamer-1.0/
 
-      - name: Create tarball
-        working-directory: app/
-        run: |
-          mkdir dist/
-          cd bundle && tar cJf ../dist/irchad.tar.xz .
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: irchad-${{ matrix.platform }}
           path: |
-            app/dist/*
+            app/bundle/*
