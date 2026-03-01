@@ -117,7 +117,7 @@ jobs:
       - name: Create tarball
         working-directory: app/
         run: |
-          cd dist && tar xJf ../bin/irchad.tar.xz .
+          cd dist && tar cJf ../dist/irchad.tar.xz .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
