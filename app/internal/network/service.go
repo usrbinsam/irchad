@@ -23,17 +23,15 @@ func (s *NetworkService) Connect(discoveryURL, nick, accountName, passphrase str
 	if err != nil {
 		return nil, err
 	}
-	log.Println("ok?")
 
 	n := NewNetwork(discoveryURL, config)
 	n.AccountName = accountName
 	n.Nick = nick
 	if accountName != "" && passphrase != "" {
-		log.Println("login?")
 		err = n.Login(accountName, passphrase)
-		log.Println("done login?")
 		if err != nil {
-			log.Fatalf("failed to login: %s", err.Error())
+			log.Printf("failed to login: %s", err.Error())
+			return nil, err
 		}
 	}
 	s.mu.Lock()
