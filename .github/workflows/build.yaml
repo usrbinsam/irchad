@@ -80,6 +80,7 @@ jobs:
             mingw-w64-x86_64-nodejs
 
       - name: Install Wails v3 CLI
+        shell: bash
         run: |
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
@@ -88,7 +89,6 @@ jobs:
         working-directory: app/
         shell: bash
         run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
           wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
 
