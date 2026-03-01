@@ -88,6 +88,7 @@ jobs:
         run: |
           # Ensure Go bin is in path for the wails command
           export PATH=$PATH:$(go env GOPATH)/bin
+          wails3 generate bindings -d frontend/src/bindings -ts -names
           wails3 build
 
       # --- Upload Artifacts ---
