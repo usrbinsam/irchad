@@ -109,15 +109,15 @@ jobs:
         if: matrix.platform == 'windows'
         working-directory: app/
         run: |
-          ldd bin/IrChad.exe | grep "mingw64" | awk '{print $3}' | xargs -I {} cp {} dist/
-          mv bin/IrChad.exe dist/
-          mkdir -p dist/lib/gstreamer-1.0
-          cp /mingw64/lib/gstreamer-1.0/*.dll dist/lib/gstreamer-1.0/
+          ldd bin/IrChad.exe | grep "mingw64" | awk '{print $3}' | xargs -I {} cp {} bundle/
+          mv bin/IrChad.exe bundle/
+          mkdir -p bundle/lib/gstreamer-1.0
+          cp /mingw64/lib/gstreamer-1.0/*.dll bundle/lib/gstreamer-1.0/
 
       - name: Create tarball
         working-directory: app/
         run: |
-          cd dist && tar cJf ../dist/irchad.tar.xz .
+          cd bundle && tar cJf ../dist/irchad.tar.xz .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
