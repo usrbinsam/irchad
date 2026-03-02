@@ -120,6 +120,7 @@ jobs:
           cp /mingw64/lib/gstreamer-1.0/*.dll bundle/lib/gstreamer-1.0/
 
       - name: Compress Bundle
+        working-directory: app/
         run: |
           tar cJf irchad-${{ matrix.platform }}.tar.xz bundle/
 
