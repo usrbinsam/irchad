@@ -136,7 +136,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            app/bundle*.tar.xz
+            app/irchad*.tar.xz
           generate_release_notes: true
           draft: true
           prerelease: true
