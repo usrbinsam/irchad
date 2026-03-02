@@ -1,6 +1,9 @@
 # IrChad
 
-:warning: This software is under active development and does not have any release builds yet!
+> [!IMPORTANT]
+> Preview builds are available [here](https://github.com/usrbinsam/irchad/releases) for Linux and Windows.
+> Preview builds will connect to the IrChad test network.
+> Expect bugs and general unstability at this time.
 
 IrChad is an IRC client that tries to make the IRC experience feel more like Discord.
 The full power of an IRC experience for your normie friends that don't like or understand
