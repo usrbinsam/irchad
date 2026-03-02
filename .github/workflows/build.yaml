@@ -119,6 +119,10 @@ jobs:
           mkdir -p bundle/lib/gstreamer-1.0
           cp /mingw64/lib/gstreamer-1.0/*.dll bundle/lib/gstreamer-1.0/
 
+      - name: Compress Bundle
+        run: |
+          tar cJf irchad-${{ matrix.platform }}.tar.xz bundle/
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -131,7 +135,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            app/bundle/*
+            app/bundle*.tar.xz
           generate_release_notes: true
           draft: true
           prerelease: true
