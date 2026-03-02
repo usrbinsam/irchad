@@ -122,7 +122,7 @@ jobs:
       - name: Compress Bundle
         working-directory: app/
         run: |
-          tar cJf irchad-${{ matrix.platform }}.tar.xz bundle/
+          tar -cJf irchad-${{ matrix.platform }}.tar.xz -C bundle/ .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
