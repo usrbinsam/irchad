@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=My Product
-Comment=A gtktest application
+Name=IrChad
+Comment=https://github.com/usrbinsam/irchad
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/gtktest %u
+Exec=/usr/local/bin/irchad %u
 Terminal=false
 Type=Application
 Icon=gtktest
 Categories=Utility;
-StartupWMClass=gtktest
+StartupWMClass=irchad
 
  

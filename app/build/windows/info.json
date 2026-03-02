@@ -1,15 +1,16 @@
 {
-	"fixed": {
-		"file_version": "0.1.0"
-	},
-	"info": {
-		"0000": {
-			"ProductVersion": "0.1.0",
-			"CompanyName": "My Company",
-			"FileDescription": "A gtktest application",
-			"LegalCopyright": "© 2026, My Company",
-			"ProductName": "My Product",
-			"Comments": "This is a comment"
-		}
-	}
+  "fixed": {
+    "file_version": "0.1.0"
+  },
+  "info": {
+    "0000": {
+      "ProductVersion": "0.0.1",
+      "CompanyName": "IrChad",
+      "FileDescription": "IrChad",
+      "LegalCopyright": "© 2026, IrChad",
+      "ProductName": "IrChad",
+      "Comments": "https://github.com/usrbinsam/irchad"
+    }
+  }
 }
+
