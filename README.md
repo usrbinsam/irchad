@@ -1,5 +1,7 @@
 # IrChad
 
+![IrChad Screnshot](/screenshots/IrChad.png)
+
 > [!IMPORTANT]
 > Preview builds are available [here](https://github.com/usrbinsam/irchad/releases) for Linux and Windows.
 > Preview builds will connect to the IrChad test network.
