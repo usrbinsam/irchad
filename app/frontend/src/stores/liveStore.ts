@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 export interface Participant {
   identity: string;
   tracks: Map<string, Track>;
+  speaking: boolean;
 }
 
 export interface Track {
@@ -31,6 +32,7 @@ export const useLiveStore = defineStore("liveStore", () => {
   function addParticipant(identity: string) {
     participants.value.set(identity, {
       identity,
+      speaking: false,
       tracks: new Map<string, Track>(),
     });
   }
@@ -63,6 +65,12 @@ export const useLiveStore = defineStore("liveStore", () => {
     t.show = true;
   }
 
+  function setSpeaking(participantID: string, speaking: boolean) {
+    const p = participants.value.get(participantID);
+    if (!p) return;
+    p.speaking = speaking;
+  }
+
   function reset() {
     setConnected("");
     participants.value.clear();
@@ -82,6 +90,7 @@ export const useLiveStore = defineStore("liveStore", () => {
     screenShareEnabled,
     screenShareDialog,
     videoDialog,
+    setSpeaking,
     setConnected,
     reset,
     addParticipant,

@@ -4,10 +4,11 @@ import "github.com/wailsapp/wails/v3/pkg/application"
 
 const (
 	EventParticipantConnected        = "live:participant-connected"
-	EventParticipantDisconnected     = "live:participant-dissconnected"
+	EventParticipantDisconnected     = "live:participant-disconnected"
 	EventParticipantTrackPublished   = "live:participant-track-published"
 	EventParticipantTrackUnpublished = "live:participant-track-unpublished"
 	EventScreenShareClosed           = "live:screen-share-closed"
+	EventSpeakingChanged             = "live:speaking-changed"
 )
 
 type ParticipantConnected struct {
@@ -35,7 +36,13 @@ type ParticipantTrackUnpublished struct {
 	TrackID  string
 }
 
-type ScreenShareClosed struct{}
+type (
+	ScreenShareClosed struct{}
+	SpeakingChanged   struct {
+		Identity   string
+		IsSpeaking bool
+	}
+)
 
 func RegisterEvents() {
 	application.RegisterEvent[ParticipantConnected](EventParticipantConnected)
@@ -43,4 +50,5 @@ func RegisterEvents() {
 	application.RegisterEvent[ParticipantTrackPublished](EventParticipantTrackPublished)
 	application.RegisterEvent[ParticipantTrackUnpublished](EventParticipantTrackUnpublished)
 	application.RegisterEvent[ScreenShareClosed](EventScreenShareClosed)
+	application.RegisterEvent[SpeakingChanged](EventSpeakingChanged)
 }

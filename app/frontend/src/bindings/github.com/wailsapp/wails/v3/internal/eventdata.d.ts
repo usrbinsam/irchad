@@ -13,10 +13,11 @@ declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "live:participant-connected": live$0.ParticipantConnected;
-            "live:participant-dissconnected": live$0.ParticipantDisconnected;
+            "live:participant-disconnected": live$0.ParticipantDisconnected;
             "live:participant-track-published": live$0.ParticipantTrackPublished;
             "live:participant-track-unpublished": live$0.ParticipantTrackUnpublished;
             "live:screen-share-closed": live$0.ScreenShareClosed;
+            "live:speaking-changed": live$0.SpeakingChanged;
         }
     }
 }

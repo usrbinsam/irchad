@@ -14,5 +14,6 @@ export type {
     ParticipantTrackUnpublished,
     ScreenShareClosed,
     ScreenShareOpts,
+    SpeakingChanged,
     WindowData
 } from "./models.js";

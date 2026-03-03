@@ -36,6 +36,11 @@ export interface ScreenShareOpts {
     "BitRate": number;
 }
 
+export interface SpeakingChanged {
+    "Identity": string;
+    "IsSpeaking": boolean;
+}
+
 export interface WindowData {
     "ID": number;
     "Title": string;

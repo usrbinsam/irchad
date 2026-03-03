@@ -11,6 +11,7 @@ func NewMicrophone(track *lksdk.LocalTrack) (*GstTrackWriter, error) {
 		"audioconvert ! " +
 		"audioresample ! " +
 		"audiornnoise ! " +
+		"level name=vadel ! " +
 		"audioconvert ! " +
 		"audioresample ! " +
 		"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! " +

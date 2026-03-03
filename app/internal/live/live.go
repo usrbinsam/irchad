@@ -72,6 +72,17 @@ func (l *LiveChat) Connect(lkServerURL, token string) error {
 					},
 				)
 			},
+			OnIsSpeakingChanged: func(p lksdk.Participant) {
+				log.Printf("OnIsSpeakingChanged: %s - %v @ %v", p.Identity(), p.IsSpeaking(), p.AudioLevel())
+				app := application.Get()
+				app.Event.Emit(
+					EventSpeakingChanged,
+					SpeakingChanged{
+						Identity:   p.Identity(),
+						IsSpeaking: p.IsSpeaking(),
+					},
+				)
+			},
 		},
 	}
 

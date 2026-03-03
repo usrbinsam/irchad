@@ -60,7 +60,7 @@ export function setupEvents() {
     console.log("new track " + data.Kind + " : ", data);
   });
 
-  Events.On("live:participant-dissconnected", (event) => {
+  Events.On("live:participant-disconnected", (event) => {
     const store = useLiveStore();
     const { data } = event;
     store.dropParticipant(data.Identity);
@@ -74,6 +74,12 @@ export function setupEvents() {
     useLiveStore().delTrack(event.data.Identity, event.data.TrackID);
   });
 }
+
+Events.On("live:speaking-changed", (event) => {
+  const store = useLiveStore();
+  console.log("speaking changed: ", event.data);
+  store.setSpeaking(event.data.Identity, event.data.IsSpeaking);
+});
 
 export async function connect(channel: string) {
   const accountStore = useAccountStore();

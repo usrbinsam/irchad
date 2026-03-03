@@ -27,7 +27,7 @@ const sortedList = computed(() => {
   for (const [ident, p] of liveStore.participants.entries()) {
     out.push({
       identity: ident,
-      speaking: false,
+      speaking: p.speaking,
       avatar: ircStore.getMetadata(ident, "avatar"),
       webcam: hasVideo(p),
       streaming: hasVideo(p),
