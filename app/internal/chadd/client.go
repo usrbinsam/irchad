@@ -55,20 +55,17 @@ func (c *Client) Login(accountName, passphrase string) error {
 		return err
 	}
 
-	log.Println("Do?")
 	res, err := c.client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
 
-	log.Println("done?")
 	if res.StatusCode != 200 {
 		return fmt.Errorf("non-200 from chadd: %d", res.StatusCode)
 	}
 
 	var resBody LoginResponse
-	log.Println("decode?")
 	dec := json.NewDecoder(res.Body)
 	err = dec.Decode(&resBody)
 	if err != nil {
