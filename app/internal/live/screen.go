@@ -3,6 +3,7 @@ package live
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/go-gst/go-gst/gst"
 	"github.com/go-gst/go-gst/gst/app"
@@ -122,14 +123,26 @@ func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
 	return basePipeline + encoder + tail
 }
 
-type gstForceKeyUnit struct {
-	Name string
+type ScreenShare struct {
+	VideoTrack *lksdk.LocalSampleTrack
+	AudioTrack *lksdk.LocalSampleTrack
+
+	pipeline *gst.Pipeline
 }
 
-func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack *lksdk.LocalSampleTrack) (*gst.Pipeline, *lksdk.LocalSampleTrack, error) {
+func NewScreenShare(w *WindowData, opts *ScreenShareOpts) (*ScreenShare, error) {
 	pipelineStr := screenCaptureSourceElement(w) +
+		"tee name=vtee vtee. ! " +
+
+		// webrtc branch
+		"queue ! " +
 		preferredEncoder(w, opts) +
 		"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 " +
+
+		// video preview
+		"vtee. ! queue ! videoconvert ! jpegenc ! appsink name=preview_sink sync=false emit-signals=true drop=true max-buffers=1 " +
+
+		// audio
 		screenAudioSourceElement(w) +
 		"audioconvert ! " +
 		"audioresample ! " +
@@ -137,6 +150,7 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack *lksdk.Loca
 		"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! " +
 		"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1"
 
+	log.Printf("screen share pipeline: %s", pipelineStr)
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)
 	if err != nil {
 		log.Fatalf("pipeline err: %s", err.Error())
@@ -153,6 +167,14 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack *lksdk.Loca
 		log.Fatalf("pipeline err: %s", err.Error())
 	}
 	audioSink := app.SinkFromElement(audioElem)
+
+	audioTrack, err := lksdk.NewLocalSampleTrack(
+		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus},
+	)
+	if err != nil {
+		log.Printf("error creating audio track: %s", err.Error())
+		return nil, err
+	}
 
 	videoTrack, err := lksdk.NewLocalSampleTrack(
 		webrtc.RTPCodecCapability{
@@ -171,15 +193,73 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts, audioTrack *lksdk.Loca
 		}),
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	go pushTrack(videoSink, videoTrack)
 	go pushTrack(audioSink, audioTrack)
 
 	err = pipeline.SetState(gst.StatePlaying)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return pipeline, videoTrack, nil
+	return &ScreenShare{
+		AudioTrack: audioTrack,
+		VideoTrack: videoTrack,
+		pipeline:   pipeline,
+	}, nil
+}
+
+func (s *ScreenShare) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "multipart/x-mixed-replace; boundary=irchad")
+	w.Header().Set("connection", "keep-alive")
+	w.Header().Set("cache-control", "no-cache, no-store, must-revalidate")
+
+	flusher := w.(http.Flusher)
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	previewElem, err := s.pipeline.GetElementByName("preview_sink")
+	if err != nil {
+		log.Fatalf("pipeline missing 'preview_sink' element")
+	}
+
+	sink := app.SinkFromElement(previewElem)
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		default:
+			sample := sink.PullSample()
+			if sample == nil {
+				if sink.IsEOS() {
+					return
+				}
+
+				continue
+			}
+
+			frame := sample.GetBuffer().Bytes()
+			_, err = fmt.Fprintf(
+				w,
+				"--irchad\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n",
+				len(frame),
+			)
+
+			_, err := w.Write(frame)
+			if err != nil {
+				log.Printf("err writing to browser: %s", err.Error())
+				return
+			}
+
+			w.Write([]byte("\r\n"))
+
+			flusher.Flush()
+		}
+	}
+}
+
+func (s *ScreenShare) Close() {
+	s.pipeline.SetState(gst.StateNull)
 }

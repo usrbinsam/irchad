@@ -14,6 +14,11 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
+const (
+	SelfParticipantKey        = "SelfParticipant"
+	SelfScreenSharePreviewKey = "ScreenShare"
+)
+
 func NewLiveChat() *LiveChat {
 	return &LiveChat{
 		room:     nil,
@@ -28,7 +33,7 @@ type LiveChat struct {
 
 	microphone io.Closer
 	camera     io.Closer
-	screen     *gst.Pipeline
+	screen     *ScreenShare
 }
 
 func (l *LiveChat) onParticipantConnected(rp *lksdk.RemoteParticipant) {
@@ -349,7 +354,7 @@ func (l *LiveChat) UnpublishScreenShare() {
 		// return
 	}
 	// stop pipeline
-	err = l.screen.SetState(gst.StateNull)
+	err = l.screen.pipeline.SetState(gst.StateNull)
 	if err != nil {
 		log.Printf("failed to stop screen share: %s", err.Error())
 		// return
@@ -380,22 +385,14 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		return fmt.Errorf("invalid window ID")
 	}
 
-	audioTrack, err := lksdk.NewLocalSampleTrack(
-		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus},
-	)
-	if err != nil {
-		log.Printf("error creating audio track: %s", err.Error())
-		return err
-	}
-
-	screenShare, videoTrack, err := NewScreenShare(w, &ss, audioTrack)
+	screenShare, err := NewScreenShare(w, &ss)
 	if err != nil {
 		log.Printf("GStreamer error: %s", err.Error())
 		return err
 	}
 
 	_, err = l.room.LocalParticipant.PublishTrack(
-		videoTrack,
+		screenShare.VideoTrack,
 		&lksdk.TrackPublicationOptions{
 			Name:   w.Title,
 			Source: livekit.TrackSource_SCREEN_SHARE,
@@ -409,7 +406,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 	l.screen = screenShare
 
 	_, err = l.room.LocalParticipant.PublishTrack(
-		audioTrack,
+		screenShare.AudioTrack,
 		&lksdk.TrackPublicationOptions{
 			Name:   w.Title,
 			Source: livekit.TrackSource_SCREEN_SHARE_AUDIO,
@@ -420,7 +417,11 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		return err
 	}
 
-	// l.screenAudioPub = audioPub
+	l.registry.Add(
+		SelfParticipantKey,
+		SelfScreenSharePreviewKey,
+		screenShare,
+	)
 
 	return nil
 }
