@@ -246,6 +246,9 @@ func (s *ScreenShare) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"--irchad\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n",
 				len(frame),
 			)
+			if err != nil {
+				return
+			}
 
 			_, err := w.Write(frame)
 			if err != nil {
@@ -253,7 +256,10 @@ func (s *ScreenShare) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			w.Write([]byte("\r\n"))
+			_, err = w.Write([]byte("\r\n"))
+			if err != nil {
+				return
+			}
 
 			flusher.Flush()
 		}
