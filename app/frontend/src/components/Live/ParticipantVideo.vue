@@ -1,21 +1,27 @@
 <script lang="ts" setup>
-const props = defineProps<{
-  title: string;
-  id: string;
-  url: string;
-  source: string;
-  trackName: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    title: string;
+    // id: string;
+    url: string;
+    source: string;
+    trackName: string;
+    tag: "video" | "img";
+  }>(),
+  {
+    tag: "video",
+  },
+);
 </script>
 
 <template>
   <v-img
-    v-if="source === 'WEBCAM'"
+    v-if="tag === 'img'"
     :src="url"
     content-class="video-feed d-flex align-end pb-2 px-2"
   >
     <v-chip
-      color="rgba(0,0,0,0.6)"
+      color="rgba(0, 0, 0, 0.6)"
       size="small"
       class="title text-white font-weight-bold"
     >

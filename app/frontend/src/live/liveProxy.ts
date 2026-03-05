@@ -124,13 +124,16 @@ export async function getWindows() {
 }
 
 export async function shareWindow(id: number, opts: ScreenShareOpts) {
-  await PublishScreenShare(id, opts);
-  useLiveStore().screenShareEnabled = true;
+  const store = useLiveStore();
+  store.screenSharePreview = await PublishScreenShare(id, opts);
+  store.screenShareEnabled = true;
 }
 
 export async function unpublishScreenShare() {
+  const store = useLiveStore();
   await UnpublishScreenShare();
-  useLiveStore().screenShareEnabled = false;
+  store.screenShareEnabled = false;
+  store.screenSharePreview = null;
 }
 
 export async function setMuted(muted: boolean) {

@@ -363,13 +363,13 @@ func (l *LiveChat) UnpublishScreenShare() {
 	application.Get().Event.Emit(EventScreenShareClosed, ScreenShareClosed{})
 }
 
-func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
+func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) (string, error) {
 	if !l.Connected() {
-		return fmt.Errorf("cannot publish screen: not connected to a room")
+		return "", fmt.Errorf("cannot publish screen: not connected to a room")
 	}
 
 	if l.screen != nil {
-		return fmt.Errorf("cannot publish screen: screen already on")
+		return "", fmt.Errorf("cannot publish screen: screen already on")
 	}
 
 	windows, _ := GetWindows()
@@ -382,13 +382,13 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 	}
 
 	if w == nil {
-		return fmt.Errorf("invalid window ID")
+		return "", fmt.Errorf("invalid window ID")
 	}
 
 	screenShare, err := NewScreenShare(w, &ss)
 	if err != nil {
 		log.Printf("GStreamer error: %s", err.Error())
-		return err
+		return "", err
 	}
 
 	_, err = l.room.LocalParticipant.PublishTrack(
@@ -400,7 +400,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 	)
 	if err != nil {
 		log.Printf("failed to publish screen share track: %s", err.Error())
-		return fmt.Errorf("failed to publish track: %w", err)
+		return "", fmt.Errorf("failed to publish track: %w", err)
 	}
 
 	l.screen = screenShare
@@ -414,7 +414,7 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 	)
 	if err != nil {
 		log.Printf("failed to publish screen audio track: %s", err.Error())
-		return err
+		return "", err
 	}
 
 	l.registry.Add(
@@ -423,5 +423,10 @@ func (l *LiveChat) PublishScreenShare(ID uint32, ss ScreenShareOpts) error {
 		screenShare,
 	)
 
-	return nil
+	return fmt.Sprintf(
+		"http://%s/stream?pid=%s&tid=%s",
+		l.decoderServer.Addr(),
+		SelfParticipantKey,
+		SelfScreenSharePreviewKey,
+	), nil
 }

@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useLiveStore } from "@/stores/liveStore";
 const liveStore = useLiveStore();
-const { videoDialog, screenShareDialog } = storeToRefs(liveStore);
+const {
+  videoDialog,
+  screenShareDialog,
+  screenShareEnabled,
+  screenSharePreview,
+} = storeToRefs(liveStore);
 
 const tracks = computed(() => {
   const out = [];
@@ -42,6 +47,15 @@ const tracks = computed(() => {
           v-for="t in tracks"
           v-bind="t"
           :key="t.id"
+          tag="video"
+        />
+        <ParticipantVideo
+          v-if="screenShareEnabled && !!screenSharePreview"
+          :url="screenSharePreview"
+          title="Your Screen"
+          :track-name="`Your Screen`"
+          source="SCREEN_SHARE"
+          tag="img"
         />
       </v-card-text>
     </v-card>

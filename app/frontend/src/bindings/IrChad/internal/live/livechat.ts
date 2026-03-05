@@ -29,7 +29,7 @@ export function PublishMicrophone(): $CancellablePromise<void> {
     return $Call.ByID(762739442);
 }
 
-export function PublishScreenShare(ID: number, ss: $models.ScreenShareOpts): $CancellablePromise<void> {
+export function PublishScreenShare(ID: number, ss: $models.ScreenShareOpts): $CancellablePromise<string> {
     return $Call.ByID(2179788497, ID, ss);
 }
 
