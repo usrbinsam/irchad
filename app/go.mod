@@ -4,12 +4,12 @@ go 1.25.0
 
 require (
 	github.com/go-gst/go-gst v1.4.0
-	github.com/livekit/protocol v1.44.1-0.20260120134243-0914cc74653e
-	github.com/livekit/server-sdk-go/v2 v2.13.3
+	github.com/livekit/protocol v1.45.0
+	github.com/livekit/server-sdk-go/v2 v2.14.0
 	github.com/pion/rtcp v1.2.16
 	github.com/pion/rtp v1.10.1
 	github.com/pion/webrtc/v4 v4.2.9
-	github.com/wailsapp/wails/v3 v3.0.0-alpha.72
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	cel.dev/expr v0.25.1 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/ProtonMail/go-crypto v1.3.0 // indirect
+	github.com/ProtonMail/go-crypto v1.4.0 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
@@ -87,7 +87,7 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/redis/go-redis/v9 v9.18.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/samber/lo v1.52.0 // indirect
+	github.com/samber/lo v1.53.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
 	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
@@ -95,7 +95,7 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
-	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
