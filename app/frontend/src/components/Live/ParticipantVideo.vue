@@ -12,6 +12,12 @@ const props = withDefaults(
     tag: "video",
   },
 );
+const vol = ref(1.0);
+const videoRef = useTemplateRef("video");
+
+function syncVolume() {
+  videoRef.value!.volume = vol.value;
+}
 </script>
 
 <template>
@@ -36,11 +42,20 @@ const props = withDefaults(
     </template>
   </v-img>
   <div v-else class="video-container">
-    <video :src="url" autoplay playsinline></video>
+    <video ref="video" :src="url" autoplay playsinline></video>
     <div class="video-overlay">
       <v-chip size="small" dark class="glass-chip">
         {{ trackName || `${title}'s Screen Share` }}</v-chip
       >
+      <v-slider
+        :max="1.0"
+        :step="0.01"
+        v-model="vol"
+        @update:model-value="syncVolume"
+        color="primary"
+        thumb-label
+        class="volume-slider"
+      ></v-slider>
     </div>
   </div>
 </template>
@@ -86,5 +101,10 @@ const props = withDefaults(
   width: 100%;
   height: 100%;
   aspect-ratio: 16/9;
+}
+
+.volume-slider {
+  left: 10px;
+  bottom: 10px;
 }
 </style>
