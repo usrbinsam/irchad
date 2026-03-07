@@ -44,14 +44,28 @@ func (d *AudioVideoDecoder) WriteVideoRTP(packet *rtp.Packet) error {
 
 func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	pipelineStr := `
-		appsrc name=video_src do-timestamp=true format=time is-live=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=125 !
+		appsrc 
+			name=video_src 
+			min-latency=0 
+			do-timestamp=true 
+			format=time 
+			is-live=true 
+			leaky=type=downstream
+			caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=125 !
 		rtpjitterbuffer latency=100 !
 		rtph264depay !
 		h264parse !
 	  queue max-size-time=500000000 leaky=downstream !
 		mux.
 
-	  appsrc name=audio_src do-timestamp=true format=time is-live=true caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
+	  appsrc 
+			leaky-type=downstream 
+			name=audio_src 
+			min-latency=0 
+			do-timestamp=true 
+			format=time 
+			is-live=true 
+			caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
 	  rtpjitterbuffer latency=100 !
 	  rtpopusdepay !
 		opusdec !
@@ -446,6 +460,9 @@ func NewAudioDecoder(ID string, track *webrtc.TrackRemote) (*AudioDecoder, error
 	  	name=src 
 			do-timestamp=true 
 	    format=time 
+		  is-live=true
+			min-latency=0
+			leaky-type=downstream
 	    caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
 	  rtpjitterbuffer latency=100 !
 	  rtpopusdepay !
