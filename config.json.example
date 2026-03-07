@@ -1,0 +1,9 @@
+{
+  "name": "irchad testnet",
+  "irc": {
+    "server": "ws://localhost:8097"
+  },
+  "live": {
+    "server": "ws://localhost:7880"
+  }
+}
