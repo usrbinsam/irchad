@@ -144,11 +144,13 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts) (*ScreenShare, error) 
 
 		// audio
 		screenAudioSourceElement(w) +
+		"queue max-size-time=1000000000 ! " +
 		"audioconvert ! " +
 		"audioresample ! " +
+		"audiorate ! " +
 		"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! " +
 		"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! " +
-		"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=1"
+		"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=100"
 
 	log.Printf("screen share pipeline: %s", pipelineStr)
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)

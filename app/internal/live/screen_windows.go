@@ -96,8 +96,8 @@ func screenCaptureSourceElement(w *WindowData) string {
 }
 
 func screenAudioSourceElement(w *WindowData) string {
-	if w.MonitorIndex != 0 {
-		return "wasapi2src loopback=true loopback-mode=include-process-tree loopback-target-pid=%d low-latency=true do-timestamp=true ! "
+	if w.PID != 0 {
+		return fmt.Sprintf("wasapi2src loopback=true loopback-mode=include-process-tree loopback-target-pid=%d do-timestamp=true ! ", w.PID)
 	}
 	// send silence if we're sharing the whole desktop
 	return "audiotestsrc wave=silence is-live=true ! "
