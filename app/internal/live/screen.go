@@ -119,7 +119,7 @@ func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
 		)
 	}
 
-	tail := "h264parse config-interval=-1 ! video/x-h264,stream-format=byte-stream,alignment=au ! "
+	tail := "h264parse config-interval=-1 ! video/x-h264,stream-format=avc,alignment=au ! "
 	return basePipeline + encoder + tail
 }
 
@@ -137,7 +137,7 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts) (*ScreenShare, error) 
 		// webrtc branch
 		"queue max-size-buffers=2 leaky=downstream ! " +
 		preferredEncoder(w, opts) +
-		"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 " +
+		"appsink name=video_sink sync=false emit-signals=false drop=true max-buffers=1 " +
 
 		// video preview
 		"vtee. ! queue max-size-buffers=2 leaky=downstream ! videoconvert ! jpegenc ! appsink name=preview_sink sync=false emit-signals=true drop=true max-buffers=1 " +
@@ -150,7 +150,7 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts) (*ScreenShare, error) 
 		"audiorate ! " +
 		"audio/x-raw,format=S16LE,layout=interleaved,rate=48000,channels=2 ! " +
 		"opusenc bitrate=64000 frame-size=20 bitrate-type=vbr bandwidth=fullband ! " +
-		"appsink name=audio_sink sync=false emit-signals=true drop=true max-buffers=100"
+		"appsink name=audio_sink sync=false emit-signals=false drop=true max-buffers=100"
 
 	log.Printf("screen share pipeline: %s", pipelineStr)
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)

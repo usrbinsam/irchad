@@ -339,11 +339,9 @@ func (l *LiveChat) UnpublishScreenShare() {
 
 	// screen share publication
 	videoPub := l.room.LocalParticipant.GetTrackPublication(livekit.TrackSource_SCREEN_SHARE)
-	log.Printf("video pub: %+v", videoPub)
 	err := l.room.LocalParticipant.UnpublishTrack(videoPub.SID())
 	if err != nil {
 		log.Printf("failed to unpublish screen video track: %s", err.Error())
-		// return
 	}
 
 	// audio publication

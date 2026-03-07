@@ -52,7 +52,7 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 			is-live=true 
 			leaky-type=downstream
 			caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=125 !
-		rtpjitterbuffer latency=100 !
+		rtpjitterbuffer latency=100  drop-on-latency=true do-retransmission=true !
 		rtph264depay !
 		h264parse !
 	  queue max-size-time=500000000 leaky=downstream !
@@ -66,7 +66,7 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 			format=time 
 			is-live=true 
 			caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
-	  rtpjitterbuffer latency=100 !
+		rtpjitterbuffer latency=100  drop-on-latency=true do-retransmission=true !
 	  rtpopusdepay !
 		opusdec !
 		audioconvert !
@@ -80,10 +80,33 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	  appsink name=sink emit-signals=false sync=false
 	`
 
+	log.Printf("screenshare decoder pipeline: %s", pipelineStr)
+
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)
 	if err != nil {
 		return nil, err
 	}
+
+	// block the pipeline until we get the first keyframe.
+	// prevents locking up the matroksa decoder in the frontend
+	// if the first thing it sees is a delta frame.
+	muxElem, err := pipeline.GetElementByName("mux")
+	if err != nil {
+		log.Fatalf("could not find muxer: %w", err)
+	}
+
+	videoSinkPad := muxElem.GetStaticPad("video_0")
+	if videoSinkPad == nil {
+		log.Fatalf("no video sink pad")
+	}
+
+	videoSinkPad.AddProbe(gst.PadProbeTypeBuffer, func(pad *gst.Pad, info *gst.PadProbeInfo) gst.PadProbeReturn {
+		buffer := info.GetBuffer()
+		if !buffer.HasFlags(gst.BufferFlagDeltaUnit) {
+			return gst.PadProbeRemove
+		}
+		return gst.PadProbeDrop
+	})
 
 	audioElem, err := pipeline.GetElementByName("audio_src")
 	if err != nil {
@@ -275,24 +298,24 @@ func (d *AudioVideoDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
-	if d.header == nil {
-		sample := d.sink.PullSample()
-		if sample != nil {
-			if len(d.header) == 0 {
-				log.Printf("AudioVideoDecoder: got mkv header")
-				d.header = append([]byte(nil), sample.GetBuffer().Bytes()...)
-			}
-		}
-	}
+	// if d.header == nil {
+	// 	sample := d.sink.PullSample()
+	// 	if sample != nil {
+	// 		if len(d.header) == 0 {
+	// 			log.Printf("AudioVideoDecoder: got mkv header")
+	// 			d.header = append([]byte(nil), sample.GetBuffer().Bytes()...)
+	// 		}
+	// 	}
+	// }
 
 	if d.pliWriterFunc != nil {
 		d.pliWriterFunc()
 	}
 
-	if d.header != nil {
-		log.Printf("AudioVideoDecoder: writing cached header")
-		w.Write(d.header)
-	}
+	// if d.header != nil {
+	// 	log.Printf("AudioVideoDecoder: writing cached header")
+	// 	w.Write(d.header)
+	// }
 
 	for {
 		sample := d.sink.PullSample()
@@ -303,7 +326,12 @@ func (d *AudioVideoDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			continue
 		}
-		_, err := w.Write(sample.GetBuffer().Bytes())
+		buffer := sample.GetBuffer()
+		// log.Printf("Writing: %d bytes | PTS: %v", buffer.GetSize(), buffer.PresentationTimestamp())
+		// log.Printf("Buffer received - IsDelta: %v, Size: %d", isDelta, buffer.GetSize())
+
+		// log.Println("writing buffer")
+		_, err := w.Write(buffer.Bytes())
 		if err != nil {
 			log.Printf("error writing webm to browser: %s", err.Error())
 			return
@@ -470,6 +498,7 @@ func NewAudioDecoder(ID string, track *webrtc.TrackRemote) (*AudioDecoder, error
 	  audioconvert !
 	  volume name=vol volume=1.0 !
 	  audioresample !
+		queue max-size-time=100000000 !
 		autoaudiosink sync=false
 	`
 	pipeline, err := gst.NewPipelineFromString(pipelineStr)
