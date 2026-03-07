@@ -42,8 +42,8 @@ func (d *AudioVideoDecoder) WriteVideoRTP(packet *rtp.Packet) error {
 	return nil
 }
 
-func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
-	pipelineStr := `
+func NewAudioVideoDecoder(videoPayloadType uint8) (*AudioVideoDecoder, error) {
+	pipelineStr := fmt.Sprintf(`
 		appsrc 
 			name=video_src 
 			min-latency=0 
@@ -51,7 +51,7 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 			format=time 
 			is-live=true 
 			leaky-type=downstream
-			caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=125 !
+			caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=%d !
 		rtpjitterbuffer latency=100  drop-on-latency=true do-retransmission=true !
 		rtph264depay !
 		h264parse !
@@ -78,7 +78,8 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
  
 	  matroskamux name=mux streamable=true !
 	  appsink name=sink emit-signals=false sync=false
-	`
+	`,
+		videoPayloadType)
 
 	log.Printf("screenshare decoder pipeline: %s", pipelineStr)
 
@@ -217,7 +218,9 @@ func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.Remot
 		log.Printf("using existing decoder: %v", streamHandler)
 	} else {
 		log.Println("making NewAudioVideoDecoder")
-		newDec, err := NewAudioVideoDecoder()
+		pt := uint8(track.PayloadType())
+
+		newDec, err := NewAudioVideoDecoder(pt)
 		if err != nil {
 			log.Printf("error creating AudioVideoDecoder: %s", err.Error())
 			return
