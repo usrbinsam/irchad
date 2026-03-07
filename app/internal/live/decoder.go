@@ -54,8 +54,12 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	  appsrc name=audio_src do-timestamp=true format=time is-live=true caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
 	  rtpjitterbuffer !
 	  rtpopusdepay !
-	  opusparse !
-	  queue !
+		opusdec !
+		audioconvert !
+		audiorate !
+		audioresample !
+		opusenc !
+	  queue max-size-time=3000000000 !
 	  mux.
  
 	  matroskamux name=mux streamable=true !
@@ -285,7 +289,6 @@ func (d *AudioVideoDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			continue
 		}
-
 		_, err := w.Write(sample.GetBuffer().Bytes())
 		if err != nil {
 			log.Printf("error writing webm to browser: %s", err.Error())
