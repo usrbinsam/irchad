@@ -50,7 +50,7 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 			do-timestamp=true 
 			format=time 
 			is-live=true 
-			leaky=type=downstream
+			leaky-type=downstream
 			caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=125 !
 		rtpjitterbuffer latency=100 !
 		rtph264depay !
