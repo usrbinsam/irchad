@@ -37,6 +37,7 @@ services:
       - "CHADD_AUTH_SECRET=secret"
       - "CHADD_ERGO_BEARER_TOKEN=${ERGO_BEARER_TOKEN}"
       - "CHADD_ERGO_BASE_URL=http://ergo:8089"
+      - "CHADD_ALLOW_ANONYMOUS_LIVE=1"
 
 volumes:
   data:

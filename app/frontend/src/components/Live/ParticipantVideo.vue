@@ -42,7 +42,14 @@ function syncVolume() {
     </template>
   </v-img>
   <div v-else class="video-container">
-    <video ref="video" :src="url" autoplay playsinline></video>
+    <video
+      ref="video"
+      :src="url"
+      autoplay
+      :muted="false"
+      controls
+      playsinline
+    ></video>
     <div class="video-overlay">
       <v-chip size="small" dark class="glass-chip">
         {{ trackName || `${title}'s Screen Share` }}</v-chip

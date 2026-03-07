@@ -24,6 +24,7 @@ type AudioVideoDecoder struct {
 	audioSource   *app.Source
 	videoSource   *app.Source
 	sink          *app.Sink
+	header        []byte
 	pliWriterFunc func()
 }
 
@@ -50,8 +51,8 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	  queue !
 		mux.
 
-	  appsrc name=audio_src do-timestamp=true format=time caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
-	  rtpjitterbuffer latency=50 !
+	  appsrc name=audio_src do-timestamp=true format=time is-live=true caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
+	  rtpjitterbuffer !
 	  rtpopusdepay !
 	  opusparse !
 	  queue !
@@ -94,7 +95,14 @@ func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 		log.Fatalf("video_src has no src pad")
 	}
 
-	dec := &AudioVideoDecoder{pipeline, audioSource, videoSource, sink, func() { panic("PLI writer func not set") }}
+	dec := &AudioVideoDecoder{
+		pipeline,
+		audioSource,
+		videoSource,
+		sink,
+		nil,
+		func() { panic("PLI writer func not set") },
+	}
 	srcPad.AddProbe(
 		gst.PadProbeTypeEventUpstream,
 		dec.pliCallback,
@@ -158,13 +166,16 @@ const (
 func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	var dec *AudioVideoDecoder
 	streamHandler, exists := l.registry.Get(rp.Identity(), ScreenShareRegistryKey)
+	log.Printf("decodeScreenShare - %s", track.ID())
 	if exists {
 		_dec, ok := streamHandler.(*AudioVideoDecoder)
 		if !ok {
 			log.Fatalf("BUG: expected an AudioVideoDecoder, got %+v", streamHandler)
 		}
 		dec = _dec
+		log.Printf("using existing decoder: %v", streamHandler)
 	} else {
+		log.Println("making NewAudioVideoDecoder")
 		newDec, err := NewAudioVideoDecoder()
 		if err != nil {
 			log.Printf("error creating AudioVideoDecoder: %s", err.Error())
@@ -246,6 +257,25 @@ func (d *AudioVideoDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
+	if d.header == nil {
+		sample := d.sink.PullSample()
+		if sample != nil {
+			if len(d.header) == 0 {
+				log.Printf("AudioVideoDecoder: got mkv header")
+				d.header = append([]byte(nil), sample.GetBuffer().Bytes()...)
+			}
+		}
+	}
+
+	if d.pliWriterFunc != nil {
+		d.pliWriterFunc()
+	}
+
+	if d.header != nil {
+		log.Printf("AudioVideoDecoder: writing cached header")
+		w.Write(d.header)
+	}
+
 	for {
 		sample := d.sink.PullSample()
 		if sample == nil {
@@ -255,6 +285,7 @@ func (d *AudioVideoDecoder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			continue
 		}
+
 		_, err := w.Write(sample.GetBuffer().Bytes())
 		if err != nil {
 			log.Printf("error writing webm to browser: %s", err.Error())

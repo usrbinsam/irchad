@@ -31,7 +31,7 @@ const tracks = computed(() => {
     <ScreenShare />
   </v-dialog>
 
-  <v-dialog v-model="videoDialog" fullscreen height="100vh">
+  <v-dialog v-model="videoDialog" fullscreen height="100vh" eager>
     <v-card height="100%">
       <v-card-title>
         Live Streams
