@@ -45,21 +45,21 @@ func (d *AudioVideoDecoder) WriteVideoRTP(packet *rtp.Packet) error {
 func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	pipelineStr := `
 		appsrc name=video_src do-timestamp=true format=time is-live=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=125 !
-		rtpjitterbuffer !
+		rtpjitterbuffer latency=100 !
 		rtph264depay !
 		h264parse !
-	  queue !
+	  queue max-size-time=500000000 leaky=downstream !
 		mux.
 
 	  appsrc name=audio_src do-timestamp=true format=time is-live=true caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
-	  rtpjitterbuffer !
+	  rtpjitterbuffer latency=100 !
 	  rtpopusdepay !
 		opusdec !
 		audioconvert !
 		audiorate !
 		audioresample !
 		opusenc !
-	  queue max-size-time=3000000000 !
+	  queue max-size-time=500000000 leaky=downstream !
 	  mux.
  
 	  matroskamux name=mux streamable=true !
@@ -447,7 +447,7 @@ func NewAudioDecoder(ID string, track *webrtc.TrackRemote) (*AudioDecoder, error
 			do-timestamp=true 
 	    format=time 
 	    caps=application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=111 !
-	  rtpjitterbuffer !
+	  rtpjitterbuffer latency=100 !
 	  rtpopusdepay !
 		opusdec !
 	  audioconvert !

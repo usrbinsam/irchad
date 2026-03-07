@@ -13,11 +13,11 @@ const windowList = ref([] as WindowData[]);
 const selectedWindow = ref(0);
 const screenShareOpts = ref({
   FrameRate: 30,
-  BitRate: 4000,
+  BitRate: 3000,
 } as ScreenShareOpts);
 async function share() {
-  console.log(screenShareOpts.value)
-  const v = screenShareOpts.value
+  console.log(screenShareOpts.value);
+  const v = screenShareOpts.value;
   // https://github.com/vuejs/core/issues/10886
   await shareWindow(selectedWindow.value, {
     FrameRate: parseInt(v.FrameRate, 10),

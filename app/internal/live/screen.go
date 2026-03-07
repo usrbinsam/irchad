@@ -108,7 +108,7 @@ func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
 	} else if hasElement("vaapih264enc") {
 		// 3. Legacy VAAPI Hardware Encoding
 		encoder = fmt.Sprintf(
-			"videoconvert ! video/x-raw,format=NV12 ! vaapih264enc bitrate=%d ! ",
+			"videoconvert ! video/x-raw,format=NV12 ! vaapih264enc rate-control=cbr bitrate=%d ! ",
 			ss.BitRate,
 		)
 	} else {
@@ -135,16 +135,16 @@ func NewScreenShare(w *WindowData, opts *ScreenShareOpts) (*ScreenShare, error) 
 		"tee name=vtee vtee. ! " +
 
 		// webrtc branch
-		"queue ! " +
+		"queue max-size-buffers=2 leaky=downstream ! " +
 		preferredEncoder(w, opts) +
 		"appsink name=video_sink sync=false emit-signals=true drop=true max-buffers=1 " +
 
 		// video preview
-		"vtee. ! queue ! videoconvert ! jpegenc ! appsink name=preview_sink sync=false emit-signals=true drop=true max-buffers=1 " +
+		"vtee. ! queue max-size-buffers=2 leaky=downstream ! videoconvert ! jpegenc ! appsink name=preview_sink sync=false emit-signals=true drop=true max-buffers=1 " +
 
 		// audio
 		screenAudioSourceElement(w) +
-		"queue max-size-time=1000000000 ! " +
+		"queue max-size-time=500000000 ! " +
 		"audioconvert ! " +
 		"audioresample ! " +
 		"audiorate ! " +

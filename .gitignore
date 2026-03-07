@@ -3,3 +3,4 @@ components.d.ts
 ircd.yaml
 .env
 config.json
+app/frontend/bindings/*
