@@ -42,7 +42,7 @@ func (d *AudioVideoDecoder) WriteVideoRTP(packet *rtp.Packet) error {
 	return nil
 }
 
-func NewAudioVideoDecoder(videoPayloadType uint8) (*AudioVideoDecoder, error) {
+func NewAudioVideoDecoder() (*AudioVideoDecoder, error) {
 	pipelineStr := fmt.Sprintf(`
 		appsrc 
 			name=video_src 
@@ -51,7 +51,7 @@ func NewAudioVideoDecoder(videoPayloadType uint8) (*AudioVideoDecoder, error) {
 			format=time 
 			is-live=true 
 			leaky-type=downstream
-			caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=%d !
+			caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=125 !
 		rtpjitterbuffer latency=100  drop-on-latency=true do-retransmission=true !
 		rtph264depay !
 		h264parse !
@@ -218,9 +218,8 @@ func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.Remot
 		log.Printf("using existing decoder: %v", streamHandler)
 	} else {
 		log.Println("making NewAudioVideoDecoder")
-		pt := uint8(track.PayloadType())
 
-		newDec, err := NewAudioVideoDecoder(pt)
+		newDec, err := NewAudioVideoDecoder()
 		if err != nil {
 			log.Printf("error creating AudioVideoDecoder: %s", err.Error())
 			return
@@ -230,7 +229,7 @@ func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.Remot
 	}
 
 	if track.Kind() == webrtc.RTPCodecTypeVideo {
-		// dec.SetVideoPayloadType(track.PayloadType())
+		log.Printf("video payload type: %d", uint8(track.PayloadType()))
 		dec.SetPLIWriter(func() { rp.WritePLI(track.SSRC()) })
 
 		go func() {
@@ -270,6 +269,7 @@ func (l *LiveChat) decodeScreenShare(track *webrtc.TrackRemote, pub *lksdk.Remot
 		)
 	} else if track.Kind() == webrtc.RTPCodecTypeAudio {
 		// dec.SetAudioPayloadType(track.PayloadType())
+		log.Printf("audio payload type: %d", uint8(track.PayloadType()))
 		go func() {
 			for {
 				packet, _, err := track.ReadRTP()
