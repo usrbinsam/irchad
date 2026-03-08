@@ -119,7 +119,7 @@ func preferredEncoder(w *WindowData, ss *ScreenShareOpts) string {
 		)
 	}
 
-	tail := "h264parse config-interval=-1 ! video/x-h264,stream-format=avc,alignment=au ! "
+	tail := "h264parse config-interval=-1 ! video/x-h264,alignment=au ! "
 	return basePipeline + encoder + tail
 }
 
