@@ -17,7 +17,7 @@ const { screenShareDialog } = storeToRefs(liveStore);
     <v-card-text>
       <v-sheet rounded="30" v-if="liveStore.screenShareEnabled">
         <v-icon color="error" class="mr-1" @click="unpublishScreenShare"
-          >mdi-monitor-off</v-icon
+          >mdi-broadcast-off</v-icon
         >
         Screen sharing is active
       </v-sheet>
@@ -62,7 +62,7 @@ const { screenShareDialog } = storeToRefs(liveStore);
 
         <v-btn
           size="small"
-          icon="mdi-monitor"
+          icon="mdi-broadcast"
           variant="text"
           :color="liveStore.screenShareEnabled ? 'success' : 'grey'"
           @click="screenShareDialog = true"
